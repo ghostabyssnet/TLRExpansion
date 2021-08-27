@@ -1,0 +1,11 @@
+*.blp
+*.dbc
+*.m2
+*.wmo
+*.skin
+*.anim
+*.phys
+*.bone
+*.skel
+build/
+tsconfig.json
