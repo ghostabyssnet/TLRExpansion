@@ -48,7 +48,7 @@ for (let x = 0; x < human_objects.length; x++) {
     spl.Name.enGB.set(name);
     spl.Description.enGB.set('Used in houses.');
     spl.CastTime.set(0,0,0);
-    spl.Duration.set(1000, 0, 1000);
+    spl.Duration.set(10000, 0, 10000);
     spl.Icon.set(icon);
     
     // set the gameobject to spawn
