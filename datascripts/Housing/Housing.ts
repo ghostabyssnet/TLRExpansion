@@ -17,6 +17,13 @@ const BASE_HOUSING_ITEM = std.Items.create("TLRHousing", "hs-base-gmonly", 44606
 
 // TODO: create types
 
+// ----------------
+// Creature Factory
+// ----------------
+
+const INVIS = std.Spells.load(67765);
+//console.log(INVIS.objectify());
+
 // ------------
 // Item Factory
 // ------------
@@ -56,6 +63,7 @@ for (let x = 0; x < human_objects.length; x++) {
     // set the gameobject to spawn
     spl.Effects.get(0).EffectType.setTransDoor().GameObjectTemplate.set(tmp.entry.get());
     spl.Range.set(0, 10, 0, 10);
+    
     // create the actual item
     let item = std.Items.create("TLRHousing", "gmtest2-" + "place-" + template, 44606)
         .Name.enGB.set(name)

@@ -1,5 +1,26 @@
+let DEBUG = true; // enable/disable verbose
+
 let spells: number[] = [200012, 200013];
 let x: TSSpell;
+
+/* -----------------
+ * Database Querying
+ * -----------------
+*/
+
+
+
+/* -----------------
+ * Database Saving
+ * -----------------
+*/
+
+//let t = QueryCharacters()
+
+/* ------------------
+ * Spells & Functions
+ * ------------------
+*/
 
 function castHousingSpell(spell: TSSpell, id: number) {
     spell.GetCaster().ToPlayer().SendBroadcastMessage("[DEBUG] Housing Spell");
