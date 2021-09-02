@@ -25,26 +25,28 @@ let model : string;
 let icon : string;
 let template : string;
 let name : string;
+let type_t: number;
 
 for (let x = 0; x < human_objects.length; x++) {
     model = human_objects[x].model;
     template = human_objects[x].id;
     name = human_objects[x].name;
     icon = human_objects[x].icon;
+    type_t = human_objects[x].type_t;
     // set display info
     let dinfo = DBC.GameObjectDisplayInfo.add(Ids.GameObjectDisplay.id())
     .ModelName.set(model);
     // set game object template
     let tmp = SQL.gameobject_template
-    .add(Ids.GameObjectTemplate.id("TLRHousing","gmtest1-"+template))
+    .add(Ids.GameObjectTemplate.id("TLRHousing","gmtest2-"+template))
     .displayId.set(dinfo.ID.get())
-    .type.set(5)
+    .type.set(type_t)
     .size.set(1)
     .Data0.set(0)
     .Data1.set(0)
     .name.set(name);
     // create the spell to be used when you attempt to place the item
-    let spl = std.Spells.create("TLRHousing", "gmtest1-" + "place-" + template, 61031);
+    let spl = std.Spells.create("TLRHousing", "gmtest2-" + "place-" + template, 61031);
     spl.Name.enGB.set(name);
     spl.Description.enGB.set('Used in houses.');
     spl.CastTime.set(0,0,0);
@@ -55,7 +57,7 @@ for (let x = 0; x < human_objects.length; x++) {
     spl.Effects.get(0).EffectType.setTransDoor().GameObjectTemplate.set(tmp.entry.get());
     spl.Range.set(0, 10, 0, 10);
     // create the actual item
-    let item = std.Items.create("TLRHousing", "gmtest1-" + "place-" + template, 44606)
+    let item = std.Items.create("TLRHousing", "gmtest2-" + "place-" + template, 44606)
         .Name.enGB.set(name)
         .Quality.setWhite()
         .Bonding.setNoBounds()
@@ -65,4 +67,5 @@ for (let x = 0; x < human_objects.length; x++) {
         .Spells.add(spl.ID).end
     console.log("Loaded Housing GameObject: " + human_objects[x].name + " " + human_objects[x].id + " ID: " + item.ID);
     console.log("DEBUG: SPELLID " + spl.ID);
+    console.log("type: " + tmp.type.get());
 }

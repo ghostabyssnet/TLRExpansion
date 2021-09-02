@@ -1,8 +1,10 @@
-let spells: number[] = [200005, 200006];
+let spells: number[] = [200012, 200013];
 let x: TSSpell;
 
 function castHousingSpell(spell: TSSpell, id: number) {
     spell.GetCaster().ToPlayer().SendBroadcastMessage("[DEBUG] Housing Spell");
+    console.log("x: " + spell.GetTargetDest().x + ", y: " + spell.GetTargetDest().y + ", z: " + spell.GetTargetDest().z + ", o: " +spell.GetTargetDest().o);
+    console.log("area id: " + spell.GetCaster().ToPlayer().GetAreaId());
 }
 
 function onCast(spell: TSSpell) {
@@ -14,7 +16,6 @@ function onCast(spell: TSSpell) {
         return;
     }
 
-    spell.GetCaster().ToPlayer().SendBroadcastMessage("[DEBUG] Any Spell");
     // if it's a housing spell...
     for (let x = 0; x < spells.length; x++) {
         if (spells[x] === spell.GetEntry()) {
