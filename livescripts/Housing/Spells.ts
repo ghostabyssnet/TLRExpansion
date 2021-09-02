@@ -2,6 +2,7 @@ let DEBUG = true; // enable/disable verbose
 
 let spells: number[] = [200012, 200013];
 let x: TSSpell;
+let global: uint32 = 0;
 
 /* -----------------
  * Database Querying
@@ -28,6 +29,10 @@ function castHousingSpell(spell: TSSpell, id: number) {
     console.log("area id: " + spell.GetCaster().ToPlayer().GetAreaId());
 }
 
+function onGameObjectCreate(obj: TSGameObject, c: TSMutable<boolean>) {
+    if (obj.GetName() == "Placeholder") c.set(true); // cancel
+}
+
 function onCast(spell: TSSpell) {
     if(spell.GetCaster().IsNull()) {
         return;
@@ -47,4 +52,5 @@ function onCast(spell: TSSpell) {
 
 export function HousingSpell(events: TSEventHandlers) {
     events.Spells.OnCast((spell)=>{onCast(spell);}); // forward any spell to onCast
+    events.GameObjects.OnCreate((obj,c)=>{onGameObjectCreate(obj, c)})
 }

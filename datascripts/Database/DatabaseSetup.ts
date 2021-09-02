@@ -37,12 +37,21 @@ const Q_guild_creategotable : string = 'CREATE TABLE IF NOT EXISTS gm_guild_go(g
 // create garrison dummy table
 const Q_guild_createdmtable : string = 'CREATE TABLE IF NOT EXISTS gm_guild_dm(guildid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,instanceId int(10) NOT NULL,map smallint NOT NULL,locx double(5,5) NOT NULL,locy double(5,5) NOT NULL,locz double(5,5) NOT NULL,loco double(5,5) NOT NULL,FOREIGN KEY(guildid) REFERENCES guild(guildid));'; 
 
+// base table that controls all the others
+const Q_go_createbasetable : string = 'CREATE TABLE IF NOT EXISTS gm_go_base(internalid int(10) unsigned NOT NULL UNIQUE AUTO_INCREMENT PRIMARY KEY,model varchar(255) UNIQUE NOT NULL,icon varchar(255) NOT NULL,id varchar(255) UNIQUE NOT NULL,name varchar(255) NOT NULL,type tinyint NOT NULL default 5);';
+
+// create gameobject template list table
+const Q_go_creategotable : string = 'CREATE TABLE IF NOT EXISTS gm_go_template(internalid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,entry int(10) unsigned NOT NULL UNIQUE,model varchar(255) UNIQUE NOT NULL,icon varchar(255) NOT NULL,id varchar(255) UNIQUE NOT NULL,name varchar(255) NOT NULL,type tinyint NOT NULL default 5,FOREIGN KEY(internalid) REFERENCES gm_go_base(internalid),FOREIGN KEY(model) REFERENCES gm_go_base(model),FOREIGN KEY(id) REFERENCES gm_go_base(id));';
+
+// create mirror dummies that shouldn't be spawned (only for item viewing purposes) table
+const Q_go_createmirrortable : string = 'CREATE TABLE IF NOT EXISTS gm_go_mirror(internalid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,entry int(10) unsigned NOT NULL UNIQUE,model varchar(255) UNIQUE NOT NULL,icon varchar(255) NOT NULL,id varchar(255) UNIQUE NOT NULL,name varchar(255) NOT NULL,type tinyint NOT NULL default 5,FOREIGN KEY(internalid) REFERENCES gm_go_base(internalid), FOREIGN KEY(entry) REFERENCES gm_go_template(entry), FOREIGN KEY(model) REFERENCES gm_go_base(model));';
+
 /* -----------------
  * Database Creation
  * -----------------
 */
 
-const CHARDB = SQL.Databases.connect({
+export const CHARDB = SQL.Databases.connect({
     database: 'tswow_characters_tswow',
     host: 'localhost',
     user: 'root',
@@ -50,7 +59,7 @@ const CHARDB = SQL.Databases.connect({
     port: '3306'
 });
 
-// create base databases
+// create base database tables
 
 CHARDB.write(Q_world_createhousestable);
 CHARDB.writeLate(Q_world_creategarrisonstable);
@@ -60,5 +69,8 @@ CHARDB.writeLate(Q_char_createdmtable);
 CHARDB.writeLate(Q_guild_createhstable);
 CHARDB.writeLate(Q_guild_creategotable);
 CHARDB.writeLate(Q_guild_createdmtable);
+CHARDB.writeLate(Q_go_createbasetable);
+CHARDB.writeLate(Q_go_creategotable);
+CHARDB.writeLate(Q_go_createmirrortable);
 
 
