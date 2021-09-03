@@ -1,5 +1,8 @@
-import { bool } from "../../../../../../bin/scripts/tswow/wotlkdata/primitives";
+import { stringToSql } from "../../../Database/DatabaseFunctions";
+import { stringFromSql } from "../../../Database/DatabaseFunctions";
 import { CHARDB } from "../../../Database/DatabaseSetup";
+
+const DEBUG = true;
 
 export let human_objects: any[] = [];
 
@@ -28,18 +31,26 @@ const bottle_green_t2 = {
     type_t: bottle_green_t.type_t
 }
 
-function stringFromSql(s: string) : string { // only used when we gotta take stuff back idk why I'm obsessed with this
-    return s.replace(/zzzz/g, '\\');
-}
+/* ------------------------------
+ * Database Variables and Queries
+ * ------------------------------
+*/
 
-function stringToSql(s: string) : string {
-    return s.replace(/\\/g, 'zzzz');
-}
+// TODO: change this for release when housing works (remove gm_ prefix)
 
-export function HousingBaseExists(model: string) : bool {
-    let query: string = "SELECT * FROM gm_go_base WHERE model LIKE " + '\'%' + model + '%\'' + ";";
-    console.log(query);
-    console.log(model);
+const gameobject_base_table: string = 'gm_go_base';
+const gameobject_template_table: string = 'gm_go_template';
+const gameobject_mirror_table: string = 'gm_go_mirror'; // possibly remove this when new tswow patch drops
+
+/* ---------
+ * Functions
+ * ---------
+*/
+
+// utility functions to make our sql not suck because of its \ escape character definitions
+
+export function HousingBaseExists(model: string) : boolean {
+    let query: string = "SELECT * FROM gm_go_base WHERE model = " + '\'' + model + '\'' + ";";
     if ((CHARDB.read(query).length < 1)) return false;
     return true;
 }
@@ -49,37 +60,40 @@ export function AddHousingBase(model: string, icon: string, id: string, name: st
         arguments[x] = stringToSql(arguments[x]);
     }
     let query: string = 'INSERT INTO gm_go_base(model, icon, id, name, type) VALUES (' + '\'' + model + '\'' + ',' + '\'' + icon + '\'' + ',' + '\'' + id + '\'' + ',' + '\'' + name + '\'' + ',' + type_t + ');';
-    console.log(query);
+    if (DEBUG) console.log(query);
     if (HousingBaseExists(model)) return;
-    //console.log(query);
+    if (DEBUG) console.log(query);
     CHARDB.write(query);
 }
 
-function SqlTest() {
-    let query = 'SELECT * FROM gm_go_base;';
-    //let query = 'SELECT * FROM gm_go_base WHERE model = ' + '\'' + stringFromSql(bottle_green_t.model) + '\'' + ";"
-    console.log(query);
-    let stuff = (CHARDB.read(query));
-    //let stuff = (CHARDB.read('SELECT model FROM gm_go_base WHERE model=' + '\'' + bottle_green_t.model + '\'' + ';'));
-    console.log(stuff.length);
-    if (stuff.length >= 1) console.log(stuff[0].model);
-    //console.log(stuff[0].model);
-    console.log(JSON.stringify(stuff));
-    if (stuff.length >= 1) console.log(stringFromSql(stuff[0].model));
+export function RemoveHousingBase(model: string) : boolean {
+    model = stringToSql(model);
+    if (!HousingBaseExists(model)) return false;
+    let query: string = ''; // TODO
+    CHARDB.write(query);
+    return true;
 }
 
-SqlTest();
+if (!HousingBaseExists(bottle_green_t2.model)) AddHousingBase(bottle_green_t2.model, bottle_green_t2.icon, bottle_green_t2.id, bottle_green_t2.name, bottle_green_t2.type_t);
 
-// TODO: remove house
+export function AddHousingTemplate(entry: number, model: string, icon: string, id: string, name: string, type_t: number) {
+    //CHARDB.write('');
+}
 
 /*CHARDB.write('DELETE FROM gm_go_base;');
 CHARDB.write('DELETE FROM gm_go_template;');
 CHARDB.write('DELETE FROM gm_go_mirror;');*/
 
-//if (!HousingBaseExists(bottle_green_t.model)) AddHousingBase(bottle_green_t2.model, bottle_green_t2.icon, bottle_green_t2.id, bottle_green_t2.name, bottle_green_t2.type_t);
-
-//console.log(HousingBaseExists(bottle_green_t.model));
-
-export function AddHousingTemplate(entry: number, model: string, icon: string, id: string, name: string, type_t: number) {
-    //CHARDB.write('');
+/*
+function SqlTest() {
+    //let query = 'SELECT * FROM gm_go_base;';
+    let query = 'SELECT * FROM gm_go_base WHERE model = ' + '\'' + bottle_green_t2.model + '\'' + ";"
+    let stuff = (CHARDB.read(query));
+    //let stuff = (CHARDB.read('SELECT model FROM gm_go_base WHERE model=' + '\'' + bottle_green_t.model + '\'' + ';'));
+    if (DEBUG) console.log(stuff.length);
+    if (stuff.length >= 1) console.log(stuff[0].model);
+    //console.log(stuff[0].model);
+    if (DEBUG) console.log(JSON.stringify(stuff));
+    if (stuff.length >= 1) console.log(stringFromSql(stuff[0].model));
 }
+*/

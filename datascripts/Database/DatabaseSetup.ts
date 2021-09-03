@@ -1,8 +1,5 @@
-import Query from "mysql2/typings/mysql/lib/protocol/sequences/Query";
 import { SQL } from "wotlkdata";
 
-const DEBUG = true; // enable/disable verbose
-const DEBUG_NAME = "TLRE/Database/DatabaseSetup: ";
 const DB_INFO = 'TODO: make database login info customizable in here (see CHARDB below)'; // TODO
 
 /* ------------------------------
@@ -12,6 +9,8 @@ const DB_INFO = 'TODO: make database login info customizable in here (see CHARDB
 
 // hsid = house ID
 // guid = player, owner
+
+// TODO: try to get rid of Mirrors after "onPreSpellCast()" drops in next tswow update
 
 // create list of houses
 const Q_world_createhousestable : string = 'CREATE TABLE IF NOT EXISTS gm_world_houselist(hsid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,zoneid int(10) unsigned NOT NULL,phase tinyint NOT NULL default 1);';

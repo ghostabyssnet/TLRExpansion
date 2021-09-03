@@ -72,5 +72,4 @@ for (let x = 0; x < human_objects.length; x++) {
     console.log("DEBUG: SPELLID " + spl.ID);
     console.log("type: " + tmp.type.get());
 }
-
 //console.log(std.Spells.load(200013).objectify());
