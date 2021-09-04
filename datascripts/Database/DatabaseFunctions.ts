@@ -16,6 +16,27 @@ export function stringToSql(s: string) : string {
 }
 
 /**
+ * 
+ * @param s {string} string without '
+ * @returns {string} 'string' with ' at its sides
+ */
+export function SqlStr(s: string) : string {
+    return '\'' + s + '\'';
+}
+
+/**
+ * 
+ * @param s {string[]} string array
+ * @returns {string[]} string array with SqlStr() applied
+ */
+export function ArgsSqlStr(s: string[]) : string[] {
+    for (let x = 0; x < s.length; x++) {
+        s[x] = SqlStr(s[x]);
+    }
+    return s;
+}
+
+/**
  * Don't forget to use stringFrom/ToSql() before if using this for anything that has \ involved
  * @param what {string} SELECT what ...
  * @param from {string} ... FROM from ...
@@ -43,22 +64,23 @@ export function Q_is_similar(what: string, from: string, where: string, to: stri
 
 /**
  * Don't forget to use stringFrom/ToSql() before if using this for anything that has \ involved, 
- * @param what {number} SELECT what ... // for strings use Q_exists_string()
+ * @param what {number} ... WHERE what = what... // for strings use Q_exists_string()
  * @param from {string} ... FROM from ...
 */
 export function Q_exists(what: number, from: string) : boolean {
-    let query:string = "SELECT " + what + " FROM " + from + " WHERE " + what + " = " + what + ";";
+    let query:string = "SELECT " + '*' + " FROM " + from + " WHERE " + what + " = " + what + ";";
     if ((CHARDB.read(query).length < 1)) return false;
     return true;
 }
 
 /**
  * Don't forget to use stringFrom/ToSql() before if using this for anything that has \ involved
- * @param what {string} SELECT what ...
+ * @param what {string} ... WHERE what = what ...
  * @param from {string} ... FROM from ...
 */
 export function Q_exists_string(what: string, from: string) : boolean {
-    let query:string = "SELECT " + what + " FROM " + from + " WHERE " + what + " = " + '\'' + what + '\'' + ";"
+    let _what = SqlStr(what);
+    let query:string = "SELECT " + '*' + " FROM " + from + " WHERE " + _what + " = " + '\'' + what + '\'' + ";";
     if ((CHARDB.read(query).length < 1)) return false;
     return true;
 }
