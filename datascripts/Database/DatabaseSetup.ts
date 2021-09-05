@@ -1,6 +1,6 @@
 import { SQL } from "wotlkdata";
 
-const DB_INFO = 'TODO: make database login info customizable in here (see CHARDB below)'; // TODO
+const DB_INFO = 'TODO: #1 make database login info customizable in here (see CHARDB below)';
 
 /* -----------------------------------------------------
  * THIS WILL BE RAN WHEN YOU'RE INSTALLING, DON'T BOTHER
@@ -13,11 +13,11 @@ const DB_INFO = 'TODO: make database login info customizable in here (see CHARDB
 /**
  * If true, this custom database gets reset on startup
  */
-const SHOULD_RECREATE: boolean = true;
+const SHOULD_RECREATE: boolean = false;
 
 // might as well use this while you're at it, if you know what you're doing
 
-const DEBUG: boolean = true;
+const DEBUG: boolean = false;
 
 /* ------------------------------
  * Database Variables and Queries
@@ -28,9 +28,10 @@ const DEBUG: boolean = true;
 // guid = player, owner
 
 // TODO: try to get rid of Mirrors after "onPreSpellCast()" drops in next tswow update
-// TODO: change this for release when housing works (remove gm_ prefix)
+// TODO: #9 change this for release (even if alpha) when housing works (remove gm_ prefix)
 
-export const db_gameobject_base: string = 'gm_go_base';
+// const db_gameobject_base: string = 'gm_go_base'; -> DEPRECATED, TODO: remove (if stuff works fine)
+
 export const db_gameobject_template: string = 'gm_go_template';
 
 export const db_gameobject_mirror: string = 'gm_go_mirror'; // possibly remove this when new tswow patch drops
@@ -53,7 +54,7 @@ const Q_world_creategarrisonstable : string = 'CREATE TABLE IF NOT EXISTS ' + db
 // create character <-> house relationship
 const Q_char_createhstable: string = 'CREATE TABLE IF NOT EXISTS ' + db_character_houses + '(guid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,hsid int(10) unsigned UNIQUE,FOREIGN KEY(guid) REFERENCES characters(guid));'; 
 
-// create gameobject table
+// create placed gameobject table
 const Q_char_creategotable: string = 'CREATE TABLE IF NOT EXISTS ' + db_character_gameobjects + '(guid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,templateId int(10) NOT NULL,instanceId int(10) NOT NULL,map smallint NOT NULL,locx double(5,5) NOT NULL,locy double(5,5) NOT NULL,locz double(5,5) NOT NULL,loco double(5,5) NOT NULL,FOREIGN KEY(guid) REFERENCES characters(guid));'; 
 
 // create dummy (the creatures we use to handle our gameobjects, rotating and stuff) table
@@ -62,20 +63,18 @@ const Q_char_createdmtable: string = 'CREATE TABLE IF NOT EXISTS ' + db_characte
 // create guild <-> garrison relationship
 const Q_guild_createhstable: string = 'CREATE TABLE IF NOT EXISTS ' + db_guild_houses + '(guildid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,hsid int(10) unsigned UNIQUE,FOREIGN KEY(guildid) REFERENCES guild(guildid));';
 
-// create garrison gameobject table
+// create garrison placed gameobject table
 const Q_guild_creategotable: string = 'CREATE TABLE IF NOT EXISTS ' + db_guild_gameobjects + '(guildid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,templateId int(10) NOT NULL,instanceId int(10) NOT NULL,map smallint NOT NULL,locx double(5,5) NOT NULL,locy double(5,5) NOT NULL,locz double(5,5) NOT NULL,loco double(5,5) NOT NULL,FOREIGN KEY(guildid) REFERENCES guild(guildid));'; 
 
 // create garrison dummy table
 const Q_guild_createdmtable: string = 'CREATE TABLE IF NOT EXISTS ' + db_guild_dummies + '(guildid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,instanceId int(10) NOT NULL,map smallint NOT NULL,locx double(5,5) NOT NULL,locy double(5,5) NOT NULL,locz double(5,5) NOT NULL,loco double(5,5) NOT NULL,FOREIGN KEY(guildid) REFERENCES guild(guildid));'; 
 
-// base table that controls all the others
-const Q_go_createbasetable: string = 'CREATE TABLE IF NOT EXISTS ' + db_gameobject_base + '(internalid int(10) unsigned NOT NULL UNIQUE AUTO_INCREMENT PRIMARY KEY,displayid int(10) UNIQUE NOT NULL,icon varchar(255) NOT NULL,id varchar(255) UNIQUE NOT NULL,name varchar(255) NOT NULL,type tinyint NOT NULL default 5);';
-
 // create gameobject template list table
-const Q_go_creategotable: string = 'CREATE TABLE IF NOT EXISTS ' + db_gameobject_template + '(internalid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,entry int(10) unsigned NOT NULL UNIQUE,id varchar(255) UNIQUE NOT NULL,name varchar(255) NOT NULL,type tinyint NOT NULL default 5,FOREIGN KEY(internalid) REFERENCES ' + db_gameobject_base + '(internalid),FOREIGN KEY(id) REFERENCES ' + db_gameobject_base + '(id));';
+const Q_go_creategotable: string = 'CREATE TABLE IF NOT EXISTS ' + db_gameobject_template + '(internalid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY AUTO_INCREMENT,entry int(10) unsigned NOT NULL UNIQUE,id varchar(255) UNIQUE NOT NULL,displayid int(10) unsigned NOT NULL UNIQUE,icon varchar(255) NOT NULL,name varchar(255) NOT NULL,rarity tinyint NOT NULL,type tinyint NOT NULL default 5);';
 
 // create mirror dummies that shouldn't be spawned (only for item viewing purposes) table
-const Q_go_createmirrortable: string = 'CREATE TABLE IF NOT EXISTS ' + db_gameobject_mirror + '(internalid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,entry int(10) unsigned NOT NULL UNIQUE,id varchar(255) UNIQUE NOT NULL,name varchar(255) NOT NULL,type tinyint NOT NULL default 5,FOREIGN KEY(internalid) REFERENCES ' + db_gameobject_base + '(internalid), FOREIGN KEY(entry) REFERENCES ' + db_gameobject_template + '(entry));';
+// note: id is not foreign key because we want it to be different than what it mirrors
+const Q_go_createmirrortable: string = 'CREATE TABLE IF NOT EXISTS ' + db_gameobject_mirror + '(internalid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,entry int(10) unsigned NOT NULL UNIQUE,id varchar(255) UNIQUE NOT NULL,name varchar(255) NOT NULL,type tinyint NOT NULL default 5,FOREIGN KEY(internalid) REFERENCES ' + db_gameobject_template + '(internalid), FOREIGN KEY(entry) REFERENCES ' + db_gameobject_template + '(entry));';
 
 /* -----------------
  * Database Creation
@@ -99,7 +98,7 @@ function ResetDatabase() {
         console.log("[TLRExpansion] RECREATING DATABASE...");
         // TODO: add a check and make below code work properly
         // (yes, programmers, I know it's ugly)
-        CHARDB.read('ALTER TABLE ' + db_gameobject_template + ' DROP FOREIGN KEY gm_go_template_ibfk_1, DROP FOREIGN KEY gm_go_template_ibfk_2;');
+        CHARDB.read('ALTER TABLE ' + db_gameobject_template + ';');
         CHARDB.read('ALTER TABLE ' + db_gameobject_mirror + ' DROP FOREIGN KEY gm_go_mirror_ibfk_1, DROP FOREIGN KEY gm_go_mirror_ibfk_2;');
         CHARDB.read('ALTER TABLE ' + db_character_houses + ' DROP FOREIGN KEY gm_char_hs_ibfk_1;');
         CHARDB.read('ALTER TABLE ' + db_character_gameobjects + ' DROP FOREIGN KEY gm_char_go_ibfk_1;');
@@ -107,7 +106,6 @@ function ResetDatabase() {
         CHARDB.read('ALTER TABLE ' + db_guild_houses + ' DROP FOREIGN KEY gm_guild_hs_ibfk_1;');
         CHARDB.read('ALTER TABLE ' + db_guild_gameobjects + ' DROP FOREIGN KEY gm_guild_go_ibfk_1;');
         CHARDB.read('ALTER TABLE ' + db_guild_dummies + ' DROP FOREIGN KEY gm_guild_dm_ibfk_1;');
-        CHARDB.read('DROP TABLE IF EXISTS ' + db_gameobject_base + ';');
         CHARDB.read('DROP TABLE IF EXISTS ' + db_gameobject_template + ';');
         CHARDB.read('DROP TABLE IF EXISTS ' + db_gameobject_mirror + ';');
         CHARDB.read('DROP TABLE IF EXISTS ' + db_world_houselist + ';');
@@ -156,8 +154,6 @@ function HandleDatabase() {
     if (QuickDebug(db_guild_gameobjects)) console.log(QuickDebug(db_guild_gameobjects)); else console.log(db_guild_gameobjects + ' failed!');
     CHARDB.read(Q_guild_createdmtable);
     if (QuickDebug(db_guild_dummies)) console.log(QuickDebug(db_guild_dummies)); else console.log(db_guild_dummies + ' failed!');
-    CHARDB.read(Q_go_createbasetable);
-    if (QuickDebug(db_gameobject_base)) console.log(QuickDebug(db_gameobject_base)); else console.log(db_gameobject_base + ' failed!');
     CHARDB.read(Q_go_creategotable);
     if (QuickDebug(db_gameobject_template)) console.log(QuickDebug(db_gameobject_template)); else console.log(db_gameobject_template + ' failed!');    
     CHARDB.read(Q_go_createmirrortable);
@@ -166,7 +162,7 @@ function HandleDatabase() {
 
 if (!SHOULD_RECREATE) HandleDatabase();
 /*
- * TODO: remove this when I'm sure stuff won't break
+ * TODO: #10 remove this when I'm sure stuff won't break
 */
 /*let xd = [];
 let cs0 = CHARDB.read('SHOW CREATE TABLE ' + db_world_houselist);
@@ -189,6 +185,4 @@ let cs8 = CHARDB.read('SHOW CREATE TABLE ' + db_guild_dummies);
 xd[8] = cs8;
 let cs9 = CHARDB.read('SHOW CREATE TABLE ' + db_gameobject_template);
 xd[9] = cs9;
-let cs10 = CHARDB.read('SHOW CREATE TABLE ' + db_gameobject_base);
-xd[10] = cs10;
 console.log(xd);*/
