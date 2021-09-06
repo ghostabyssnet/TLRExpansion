@@ -239,7 +239,7 @@ function HousingItemCreate(id: string, name: string, icon: string, entry: number
  * @param type_t 
  */
 export function HousingObjectCreate(model: string, icon: string, id: string, name: string, type_t: number = 5) {
-    
+    // TODO: this
 }
 
 /* ---------
