@@ -2,8 +2,8 @@ import { std } from "tswow-stdlib";
 import { Ids } from "tswow-stdlib/Misc/Ids";
 import { DBC, SQL } from "wotlkdata";
 import { SQL_trinity_string } from "wotlkdata/sql/types/trinity_string";
-import { ArgsSqlStr, Q_exists_string, SqlStr, stringToSql } from "../Database/DatabaseFunctions";
-import { CHARDB, db_gameobject_template } from "../Database/DatabaseSetup";
+import { ArgsSqlStr, Q_exists, Q_exists_string, SqlStr, stringToSql } from "../Database/DatabaseFunctions";
+import { CHARDB, db_gameobject_mirror, db_gameobject_template } from "../Database/DatabaseSetup";
 
 /*
  * -------------------------------------
@@ -15,12 +15,15 @@ import { CHARDB, db_gameobject_template } from "../Database/DatabaseSetup";
 // turn this on for verbose
 const DEBUG = true;
 
+// constant used for internal ID stuff for gameobject mirrors. change only if you know what you're doing
+const INTERNAL_HOUSING_TAG = 'HSOBJMIR'
+
 export let human_objects: any[] = [];
 
 const table_t = {
     model: "World\\Generic\\Human\\Passive Doodads\\Tables\\inntable.m2",
     icon: "Interface\\Icons\\Spell_Shadow_Brainwash.blp",
-    id: "hs-table-human",
+    id: "hstablehuman",
     name: "Table",
     type_t: 5
 }
@@ -68,11 +71,37 @@ const bottle_green_t3 = {
 
 /**
  * Returns if a GameObject Template exists
- * @param id A TSWoW (TLRSomething-...) id, including prefix 
+ * @param id A TSWoW (TLRSomething...) id, no prefix
  * @returns boolean
  */
 export function GameObjectTemplateExists(id: string) : boolean {
     return Q_exists_string(stringToSql(id), db_gameobject_template);
+}
+
+function ValidateQuality(s: string) : number {
+    switch (s) {
+        case 'gray':
+        case 'trash':
+            return 0;
+        case 'white':
+        case 'common':
+            return 1;
+        case 'green':
+        case 'uncommon':
+            return 2;
+        case 'blue':
+        case 'rare':
+            return 3;
+        case 'purple':
+        case 'epic':
+            return 4;
+        case 'orange':
+        case 'legendary':
+            return 5;
+        case 'heirloom':
+            return 6;
+    }
+    return -1;
 }
 
 /**
@@ -85,11 +114,10 @@ export function GameObjectTemplateExists(id: string) : boolean {
  * @param name our object's name in-game, doesn't need to be unique
  * @param type our GameObjectType. read the wiki! it's almost always 5
  */
-function GameObjectTemplateCreate(model: string, icon: string, id: string, name: string, type_t: number = 5) : boolean {
+function GameObjectTemplateCreate(model: string, icon: string, id: string, name: string, rarity: number, type_t: number = 5) : number {
     // careful: this will always create a new gameobject in the game database, even if everything else fails
-
-    if (GameObjectTemplateExists(id)) return false; // no duplicate entries
-
+    if (id.includes(INTERNAL_HOUSING_TAG)) return -99;
+    if (GameObjectTemplateExists(id)) return -2; // no duplicate entries
     let args = [];
     for (let x = 0; x < arguments.length; x++) {
         args[x] = stringToSql(arguments[x].toString());
@@ -99,14 +127,16 @@ function GameObjectTemplateCreate(model: string, icon: string, id: string, name:
     let dinfo = DBC.GameObjectDisplayInfo.add(Ids.GameObjectDisplay.id())
     .ModelName.set(model);
     let displayid = dinfo.ID.get(); // our wow database (dbc) displayid
-
+    if (Q_exists(displayid, db_gameobject_template, 'displayid')) return -4; // no duplicate entries
     // creates a unique id for tswow for this gameobject
-    let tswowid: number = Ids.GameObjectTemplate.id("TLRHousing-", id); // read below
+    let tswowid: number = Ids.GameObjectTemplate.id("TLRHousing", id); // read below
     // tswow creates an ID for this by itself, we will end up with 3 ids: internalid for SQL, id (TLRHousing-...) for tswow, ID for the actual game
-    if (!tswowid) console.log("TSWoW couldn't generate an TSWOWID for " + dinfo + '(' + name + ')'); // something went terribly wrong
-    
+    if (!tswowid) {
+        console.log("TSWoW couldn't generate an TSWOWID for " + dinfo + '(' + name + ')'); // something went terribly wrong
+        return -3;
+    }
     let template = SQL.gameobject_template
-        .add(Ids.GameObjectTemplate.id("TLRHousing-",id))
+        .add(Ids.GameObjectTemplate.id("TLRHousing",id))
         .displayId.set(dinfo.ID.get())
         .type.set(type_t)
         .size.set(1)
@@ -115,11 +145,37 @@ function GameObjectTemplateCreate(model: string, icon: string, id: string, name:
         .name.set(name);
     let entry = template.entry.get(); // our wow database (dbc) unique entry
 
-    let query: string = 'INSERT INTO ' + db_gameobject_template + '(entry, id, displayid, icon, name, type) VALUES (' + entry + ',' + args[2] + ',' + displayid + ',' + args[1] + ',' + args[3] + ',' + type_t + ');';
+    let query: string = 'INSERT INTO ' + db_gameobject_template + '(entry, id, displayid, icon, name, rarity, type) VALUES (' + entry + ',' + args[2] + ',' + displayid + ',' + args[1] + ',' + args[3] + ',' + rarity + ',' + type_t + ');';
     if (DEBUG) console.log(query);
-    CHARDB.write(query);
+    CHARDB.read(query);
     console.log('Template ' + entry + ' created successfully!');
-    return true;
+    let getid: string = 'SELECT internalid FROM ' + db_gameobject_template + ' WHERE entry = ' + entry + ';';
+    let lambimia: object[] = CHARDB.read(getid);
+    lambimia = lambimia as [];
+    if (undefined !== lambimia && lambimia.length){
+        let internalid: number = -98;
+        if ((lambimia as unknown as object[]).length) {
+            lambimia = lambimia as any;
+            if (lambimia.length >= 1) internalid = Object.values((lambimia[0] as object)) as unknown as number; else internalid = -99;
+        }
+        if (internalid == -98) {
+            console.log('ID bug didnt change internalid');
+            return -5;
+        }
+        else if (internalid == -99) {
+            console.log('ID BUG didnt find shit');
+            return -6;
+        }
+        let mirrorid: string = SqlStr(id + INTERNAL_HOUSING_TAG);
+        query = 'INSERT INTO ' + db_gameobject_mirror + '(internalid, entry, id, name, type) VALUES (' + internalid + ',' + entry + ',' + mirrorid + ',' + args[3] + ',' + type_t + ');';
+        if (DEBUG) console.log(query);
+        CHARDB.read(query);
+        console.log('TemplateMirror ' + entry + ' created successfully!');
+    }
+    else {
+        console.log(lambimia);
+    }
+    return entry;
 }
 
 /**
@@ -144,7 +200,7 @@ export function GameObjectInstanceRemove() {
 
 }
 
-// TODO: test this (housingitemquality)
+// TODO: test this (housingitemquality), then set it to export maybe
 
 /**
  * returns the quality of a housing item stored in the database
@@ -187,12 +243,12 @@ function HousingItemQuality(id: string) : number {
  * @param entry GameObjectTemplate entry id
  * @returns error or not
  */
-function HousingSpellCreate(id: string, name: string, icon: string, entry: number) : boolean {
+function HousingSpellCreate(id: string, name: string, icon: string, entry: number) : number {
     if (!GameObjectTemplateExists(id)){
         console.log("HousingSpellCreate() ERROR: Template " + id + " doesn't exist!"); 
-        return false;
+        return -2;
     }
-    let spl = std.Spells.create("TLRHousing-", id, 61031);
+    let spl = std.Spells.create("TLRHousing", id, 61031);
         spl.Name.enGB.set(name);
         spl.Description.enGB.set('Used in a house or garrison.');
         spl.CastTime.set(0,0,0);
@@ -202,7 +258,7 @@ function HousingSpellCreate(id: string, name: string, icon: string, entry: numbe
         // it does get spawned for 1 tick but players shouldn't be able to notice it
         spl.Effects.get(0).EffectType.setTransDoor().GameObjectTemplate.set(entry);
         spl.Range.set(0, 10, 0, 10);
-    return true;
+    return spl.ID;
 }
 
 /**
@@ -211,23 +267,24 @@ function HousingSpellCreate(id: string, name: string, icon: string, entry: numbe
  * @param id TSWoW ID
  * @param name Spell name
  * @param icon Path to icon file
- * @param entry Spell id
+ * @param quality Item quality as number (see quality IDs)
+ * @param spellid Spell ID of what summons the object
  * @returns error or not
  */
-function HousingItemCreate(id: string, name: string, icon: string, entry: number) : boolean{
+function HousingItemCreate(id: string, name: string, icon: string, quality: number, entry: number) : number {
     if (!GameObjectTemplateExists(id)){
-        console.log("HousingSpellCreate() ERROR: Template " + id + " doesn't exist!"); 
-        return false;
+        console.log("HousingItemCreate() ERROR: Template " + id + " doesn't exist!"); 
+        return -2;
     }
-    let item = std.Items.create("TLRHousing-", id, 44606)
+    let item = std.Items.create("TLRHousing", id, 44606)
             .Name.enGB.set(name)
-            .Quality.set(9999999) // TODO: !!!
+            .Quality.set(quality)
             .Bonding.setNoBounds()
             .Description.enGB.set("Used in houses.")
             .DisplayInfo.Icon.set(icon).end
             .Spells.clearAll()
             .Spells.add(entry).end
-    return true;
+    return item.ID;
 }
 
 /**
@@ -236,12 +293,75 @@ function HousingItemCreate(id: string, name: string, icon: string, entry: number
  * @param icon 
  * @param id 
  * @param name 
+ * @param quality
  * @param type_t 
  */
-export function HousingObjectCreate(model: string, icon: string, id: string, name: string, type_t: number = 5) {
-    // TODO: this
+export function HousingObjectCreate(model: string, icon: string, id: string, name: string, quality: string, type_t: number = 5) {
+    // TODO: test this thoroughly
+    let templateid: number = -1; // -1 as error
+    let spellid: number = -1;
+    let itemid: number = -1;
+    let qual = ValidateQuality(quality);
+    if (qual < 0 || qual > 6) {
+        console.log("Failed to create GameObjectTemplate " + id + "! Invalid item quality: " + quality);
+        return;
+    }
+    templateid = GameObjectTemplateCreate(model, icon, id, name, qual, type_t);
+    if (templateid <= 0) {
+        switch (templateid) {
+            case 0:
+            case -1:
+                console.log("Failed to create GameObjectTemplate " + id + "! Internal error. Report this!");
+                return;
+            case -2:
+                return;
+            case -3:
+                console.log("Failed to create GameObjectTemplate " + id +"! TSWoW couldn't generate an ID for itself. Report this!");
+                return;
+            case -4:
+                console.log("Failed to create GameObjectTemplate " + id +"! GameObjectTemplate with this Display ID already exists.");
+                return;
+            default:
+                console.log("Unknown error creating GameObjectTemplate " + id +". Please report this ASAP.");
+                return;
+        }
+    }
+    if (DEBUG) console.log("GameObjectTemplate created with ID " + templateid + "!");
+    spellid = HousingSpellCreate(id, name, icon, templateid);
+    if (spellid <= 0) {
+        switch (spellid) {
+            case 0:
+            case -1:
+                console.log("Failed to create HousingSpell " + id + "! Internal error. Report this!");
+                return;
+            case -2:
+                return;
+            default:
+                console.log("Unknown error creating HousingSpell " + id +". Please report this ASAP.");
+                return;
+        }
+    }
+    if (DEBUG) console.log("HousingSpell created with ID " + spellid + "!");
+    itemid = HousingItemCreate(id, name, icon, qual, spellid);
+    if (itemid <= 0) {
+        switch (itemid) {
+            case 0:
+            case -1:
+                console.log("Failed to create HousingItem " + id + "! Internal error. Report this!");
+                return;
+            case -2:
+                console.log("Failed to create HousingItem " + id +"! Template with this ID already exists.");
+                return;
+            default:
+                console.log("Unknown error creating HousingItem " + id +". Please report this ASAP.");
+                return;
+        }
+    }
+    if (DEBUG) console.log("HousingItem created with ID " + itemid + "!");
 }
-
+//console.log(CHARDB.read('SHOW VARIABLES LIKE \'sql_mode\''));
+HousingObjectCreate(table_t.model, table_t.icon, table_t.id, table_t.name, 'blue', table_t.type_t);
+//console.log((Q_exists(10000, db_gameobject_template, 'displayid')));
 /* ---------
  * Functions
  * ---------

@@ -7,6 +7,8 @@ import { CHARDB } from "./DatabaseSetup";
  * ---------------------------------
 */
 
+//TODO: #11 replace most DatabaseFunctions' names and stuff with CharDatabase, those functions do nothing outside of it
+
 export function stringFromSql(s: string) : string { // only used when we gotta take stuff back idk why I'm obsessed with this
     return s.replace(/zzzz/g, '\\');
 }
@@ -64,10 +66,11 @@ export function Q_is_similar(what: string, from: string, where: string, to: stri
 
 /**
  * Don't forget to use stringFrom/ToSql() before if using this for anything that has \ involved, 
- * @param what {number} ... WHERE what = what... // for strings use Q_exists_string()
+ * @param what {number} ... WHERE where = what... // for strings use Q_exists_string()
  * @param from {string} ... FROM from ...
+ * @param where {string} ... WHERE where = what...
 */
-export function Q_exists(what: number, from: string) : boolean {
+export function Q_exists(what: number, from: string, where: string) : boolean {
     let query:string = "SELECT " + '*' + " FROM " + from + " WHERE " + what + " = " + what + ";";
     if ((CHARDB.read(query).length < 1)) return false;
     return true;
