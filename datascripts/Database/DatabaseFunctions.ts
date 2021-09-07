@@ -17,6 +17,18 @@ export function stringToSql(s: string) : string {
     return s.replace(/\\/g, 'zzzz');
 }
 
+// TODO: #14 create a new function for most/all SQL values based on the snippet below
+/*
+let lambimia: object[] = CHARDB.read(getid);
+    lambimia = lambimia as [];
+    if (undefined !== lambimia && lambimia.length){
+        let internalid: number = -98;
+        if ((lambimia as unknown as object[]).length) {
+            lambimia = lambimia as any;
+            if (lambimia.length >= 1) internalid = Object.values((lambimia[0] as object)) as unknown as number; else internalid = -99;
+        }
+*/
+
 /**
  * 
  * @param s {string} string without '

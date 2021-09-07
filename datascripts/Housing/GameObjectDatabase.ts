@@ -4,6 +4,7 @@ import { DBC, SQL } from "wotlkdata";
 import { SQL_trinity_string } from "wotlkdata/sql/types/trinity_string";
 import { ArgsSqlStr, Q_exists, Q_exists_string, SqlStr, stringToSql } from "../Database/DatabaseFunctions";
 import { CHARDB, db_gameobject_template } from "../Database/DatabaseSetup";
+import fs from 'fs';
 
 /*
  * -------------------------------------
@@ -301,6 +302,7 @@ function HousingItemCreate(id: string, name: string, icon: string, quality: numb
  */
 export function HousingObjectCreate(model: string, icon: string, id: string, name: string, quality: string, type_t: number = 5) {
     // TODO: test this thoroughly
+    // FIXME: show error messages only on debug
     let templateid: number = -1; // -1 as error
     let spellid: number = -1;
     let itemid: number = -1;
@@ -316,16 +318,15 @@ export function HousingObjectCreate(model: string, icon: string, id: string, nam
             case -1:
                 console.log("Failed to create GameObjectTemplate " + id + "! Internal error. Report this!");
                 return;
-            case -2:
-                return;
             case -3:
-                console.log("Failed to create GameObjectTemplate " + id +"! TSWoW couldn't generate an ID for itself. Report this!");
+                console.log("Failed to create GameObjectTemplate " + id + "! TSWoW couldn't generate an ID for itself. Report this!");
                 return;
+            case -2:
             case -4:
-                console.log("Failed to create GameObjectTemplate " + id +"! GameObjectTemplate with this Display ID already exists.");
+                console.log("Failed to create GameObjectTemplate " + id + "! GameObjectTemplate with this Display ID already exists.");
                 return;
             default:
-                console.log("Unknown error creating GameObjectTemplate " + id +". Please report this ASAP.");
+                console.log("Unknown error creating GameObjectTemplate " + id + ". Please report this ASAP.");
                 return;
         }
     }
@@ -362,26 +363,34 @@ export function HousingObjectCreate(model: string, icon: string, id: string, nam
     }
     if (DEBUG) console.log("HousingItem created with ID " + itemid + "!");
 }
-//console.log(CHARDB.read('SHOW VARIABLES LIKE \'sql_mode\''));
+
 HousingObjectCreate(table_t.model, table_t.icon, table_t.id, table_t.name, 'blue', table_t.type_t);
-//console.log((Q_exists(10000, db_gameobject_template, 'displayid')));
+
 /* ---------
  * Functions
  * ---------
 */
 
-/*CHARDB.write('DELETE FROM gm_go_base;');
-CHARDB.write('DELETE FROM gm_go_template;');
-CHARDB.write('DELETE FROM gm_go_mirror;');*/
+// TODO: test this
+function HousingObjectExists(name: string) : boolean {
+    if (!fs.readFileSync('./housingobjects.json')) return false;
+    const file = fs.readFileSync('./housingobjects.json');
+    const result = JSON.parse(file.toString());
+    if (!result.contains(name)) return false;
+    return true;
+}
 
-/*function SqlTest() {
-    let query = 'SELECT * FROM gm_go_base;';
-    //let query = 'SELECT * FROM gm_go_base WHERE model = ' + '\'' + bottle_green_t2.model + '\'' + ";"
-    let stuff = (CHARDB.read(query));
-    //let stuff = (CHARDB.read('SELECT model FROM gm_go_base WHERE model=' + '\'' + bottle_green_t.model + '\'' + ';'));
-    if (DEBUG) console.log(stuff.length);
-    //if (stuff.length >= 1) console.log(stuff[0].model);
-    //console.log(stuff[0].model);
-    //if (DEBUG) console.log(JSON.stringify(stuff));
-    //if (stuff.length >= 1) console.log(stringFromSql(stuff[0].model));
-}*/
+// TODO:
+function AddHousingObject() {
+
+}
+
+// TODO:
+function RemoveHousingObject() {
+
+}
+
+// TODO:
+function LoadHousingObjects() {
+
+}

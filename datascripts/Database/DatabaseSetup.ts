@@ -13,7 +13,7 @@ const DB_INFO = 'TODO: #1 make database login info customizable in here (see CHA
 /**
  * If true, this custom database gets reset on startup
  */
-const SHOULD_RECREATE: boolean = true;
+const SHOULD_RECREATE: boolean = false;
 
 // might as well use this while you're at it, if you know what you're doing
 
