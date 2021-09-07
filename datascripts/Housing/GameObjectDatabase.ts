@@ -1,7 +1,6 @@
 import { std } from "tswow-stdlib";
 import { Ids } from "tswow-stdlib/Misc/Ids";
 import { DBC, SQL } from "wotlkdata";
-import { SQL_trinity_string } from "wotlkdata/sql/types/trinity_string";
 import { ArgsSqlStr, Q_exists, Q_exists_string, SqlStr, stringToSql } from "../Database/DatabaseFunctions";
 import { CHARDB, db_gameobject_template } from "../Database/DatabaseSetup";
 import fs from 'fs';
@@ -13,8 +12,13 @@ import fs from 'fs';
  * -------------------------------------
 */
 
+// TODO: #16 generate types and classes and stuff for this file
+
 // turn this on for verbose
 const DEBUG = true;
+
+// file path for housing objects' definitions (json file)
+const HS_PATH = './TLRExpansion/Housing/housingobjects.json';
 
 // constant used for internal ID stuff for gameobject mirrors. change only if you know what you're doing
 const INTERNAL_HOUSING_TAG = 'HSOBJMIR'
@@ -341,7 +345,7 @@ export function HousingObjectCreate(model: string, icon: string, id: string, nam
             case -2:
                 return;
             default:
-                console.log("Unknown error creating HousingSpell " + id +". Please report this ASAP.");
+                console.log("Unknown error creating HousingSpell " + id + ". Please report this ASAP.");
                 return;
         }
     }
@@ -354,10 +358,10 @@ export function HousingObjectCreate(model: string, icon: string, id: string, nam
                 console.log("Failed to create HousingItem " + id + "! Internal error. Report this!");
                 return;
             case -2:
-                console.log("Failed to create HousingItem " + id +"! Template with this ID already exists.");
+                console.log("Failed to create HousingItem " + id + "! Template with this ID already exists.");
                 return;
             default:
-                console.log("Unknown error creating HousingItem " + id +". Please report this ASAP.");
+                console.log("Unknown error creating HousingItem " + id + ". Please report this ASAP.");
                 return;
         }
     }
@@ -371,24 +375,87 @@ HousingObjectCreate(table_t.model, table_t.icon, table_t.id, table_t.name, 'blue
  * ---------
 */
 
-// TODO: test this
-function HousingObjectExists(name: string) : boolean {
-    if (!fs.readFileSync('./housingobjects.json')) return false;
-    const file = fs.readFileSync('./housingobjects.json');
-    const result = JSON.parse(file.toString());
-    if (!result.contains(name)) return false;
+/**
+ * Check if housing object exists (use something unique as parameter please)
+ * @param id any string that would define a housing object
+ * @returns true or false
+ */
+function HousingObjectExists(id: string) : boolean {
+    if (!fs.existsSync(HS_PATH)) return false;
+    const file = fs.readFileSync(HS_PATH);
+    let result = JSON.parse(file.toString());
+    result = JSON.stringify(result);
+    if (!(result as string).includes(id)) return false;
     return true;
 }
 
-// TODO:
-function AddHousingObject() {
-
+/**
+ * Add a housingobject to the housing objects' database
+ * @param model path to model file
+ * @param icon path to icon file
+ * @param id unique ID (as string) for the object
+ * @param name defines the display name of the object
+ * @param quality defines the item quality (uncommon, rare, epic, etc...) of the object's item
+ * @param type_t object type, if you don't know what you're doing, just leave it at 5
+ * @returns void
+ */
+function AddHousingObject(model: string, icon: string, id: string, name: string, quality: string, type_t: number = 5) {
+    let args: string[] = [model, id, name];
+    let obj: object = {model: 'placeholder', icon: 'placeholder', id: 'placeholder', name: 'placeholder', quality: 'gray', type_t: 5};
+    let baseobj: object[] = [];
+    baseobj.push(obj);
+    if (!fs.existsSync(HS_PATH)) fs.writeFileSync(HS_PATH, JSON.stringify(baseobj, null, 2)); // create file if it doesn't exist
+    for (let x = 0; x < args.length; x++) {
+        if (HousingObjectExists(args[x])) {
+            if (DEBUG) console.log("There's already an housing object with ID " + args[x]);
+            return;
+        }
+    }
+    const file = fs.readFileSync(HS_PATH);
+    let stuff: object[] = JSON.parse(file.toString());
+    console.log(file.toString());
+    console.log(JSON.stringify(stuff));
+    const object: object = {model: model, icon: icon, id: id, name: name, quality: quality, type_t: type_t};
+    stuff.push(object);
+    console.log(JSON.stringify(stuff));
+    fs.writeFileSync(HS_PATH, JSON.stringify(stuff, null, 2));
+    if (DEBUG) console.log('HousingObject ' + id + ' added successfully.');
 }
 
 // TODO:
 function RemoveHousingObject() {
 
 }
+
+/**
+ * 
+ * @param id 
+ * @returns 
+ */
+function LoadHousingObject(id: string) : object | null {
+    if (!HousingObjectExists(id)) return null;
+    const file = fs.readFileSync(HS_PATH);
+    let y: object[] = [];
+    const result: object[] = JSON.parse(file.toString()) as object[];
+    if (result) y = result;
+    let object: object = {};
+    let x = y.find((x: any) => x.id === id);
+    if (x) object = x;
+    if (!object) return null;
+    return object;
+}
+
+// TODO: delete
+function quicktest() {
+    console.log('Calling AddHousingObject()');
+    AddHousingObject(bottle_green_t.model, bottle_green_t.icon, bottle_green_t.id, bottle_green_t.name, 'white', 5);
+    console.log('Calling LoadHousingObject()');
+    let test = LoadHousingObject('lambmias');
+    if (test) console.log(JSON.stringify(test));
+    console.log('end quicktest()');
+}
+
+quicktest();
 
 // TODO:
 function LoadHousingObjects() {
