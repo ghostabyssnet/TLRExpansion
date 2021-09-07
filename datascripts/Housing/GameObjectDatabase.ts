@@ -18,7 +18,7 @@ import fs from 'fs';
 const DEBUG = true;
 
 // file path for housing objects' definitions (json file)
-const HS_PATH = './TLRExpansion/Housing/housingobjects.json';
+const HS_PATH = './modules/TLRExpansion/datascripts/Housing/housingobjects.json';
 
 // constant used for internal ID stuff for gameobject mirrors. change only if you know what you're doing
 const INTERNAL_HOUSING_TAG = 'HSOBJMIR'
@@ -422,11 +422,6 @@ function AddHousingObject(model: string, icon: string, id: string, name: string,
     if (DEBUG) console.log('HousingObject ' + id + ' added successfully.');
 }
 
-// TODO:
-function RemoveHousingObject() {
-
-}
-
 /**
  * 
  * @param id 
@@ -445,6 +440,25 @@ function LoadHousingObject(id: string) : object | null {
     return object;
 }
 
+/**
+ * 
+ * @param id 
+ * @returns 
+ */
+function RemoveHousingObject(id: string) : boolean {
+    let x: object | null = null;
+    if (!HousingObjectExists(id)) return false;
+    if (LoadHousingObject(id)) x = LoadHousingObject(id) as object;
+    const file = fs.readFileSync(HS_PATH);
+    const result: object[] = JSON.parse(file.toString()) as object[];
+    let index: number;
+    if (x) index = result.indexOf(x);
+    else return false;
+    result.splice(index, 1);
+    fs.writeFileSync(HS_PATH, JSON.stringify(result, null, 2));
+    return true;
+}
+
 // TODO: delete
 function quicktest() {
     console.log('Calling AddHousingObject()');
@@ -452,12 +466,20 @@ function quicktest() {
     console.log('Calling LoadHousingObject()');
     let test = LoadHousingObject('lambmias');
     if (test) console.log(JSON.stringify(test));
+    console.log('Calling RemoveHousingObject()');
+    console.log(RemoveHousingObject(bottle_green_t.id));
     console.log('end quicktest()');
 }
 
-quicktest();
+// TODO: this
+function LoadHousingObjects() : object[] {
+    let result: object[] = [];
+    if (!fs.existsSync(HS_PATH)) return [];
+    
+    return result;
+}
 
-// TODO:
-function LoadHousingObjects() {
+// TODO: remove this for any release
+function generatetable() {
 
 }
