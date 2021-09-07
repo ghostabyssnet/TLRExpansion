@@ -34,7 +34,7 @@ const DEBUG: boolean = false;
 
 export const db_gameobject_template: string = 'gm_go_template';
 
-export const db_gameobject_mirror: string = 'gm_go_mirror'; // possibly remove this when new tswow patch drops
+// export const db_gameobject_mirror: string = 'gm_go_mirror'; // possibly remove this when new tswow patch drops
 
 export const db_world_houselist: string = 'gm_world_houselist';
 export const db_world_garrisonlist: string = 'gm_world_garrisonlist';
@@ -74,7 +74,8 @@ const Q_go_creategotable: string = 'CREATE TABLE IF NOT EXISTS ' + db_gameobject
 
 // create mirror dummies that shouldn't be spawned (only for item viewing purposes) table
 // note: id is not foreign key because we want it to be different than what it mirrors
-const Q_go_createmirrortable: string = 'CREATE TABLE IF NOT EXISTS ' + db_gameobject_mirror + '(internalid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,entry int(10) unsigned NOT NULL UNIQUE,id varchar(255) UNIQUE NOT NULL,name varchar(255) NOT NULL,type tinyint NOT NULL default 5,FOREIGN KEY(internalid) REFERENCES ' + db_gameobject_template + '(internalid), FOREIGN KEY(entry) REFERENCES ' + db_gameobject_template + '(entry));';
+// TODO: #13 remove this shit if mirrors aren't needed
+// const Q_go_createmirrortable: string = 'CREATE TABLE IF NOT EXISTS ' + db_gameobject_mirror + '(internalid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,entry int(10) unsigned NOT NULL UNIQUE,id varchar(255) UNIQUE NOT NULL,name varchar(255) NOT NULL,type tinyint NOT NULL default 5,FOREIGN KEY(internalid) REFERENCES ' + db_gameobject_template + '(internalid), FOREIGN KEY(entry) REFERENCES ' + db_gameobject_template + '(entry));';
 
 /* -----------------
  * Database Creation
@@ -99,7 +100,7 @@ function ResetDatabase() {
         // TODO: add a check and make below code work properly
         // (yes, programmers, I know it's ugly)
         CHARDB.read('ALTER TABLE ' + db_gameobject_template + ';');
-        CHARDB.read('ALTER TABLE ' + db_gameobject_mirror + ' DROP FOREIGN KEY gm_go_mirror_ibfk_1, DROP FOREIGN KEY gm_go_mirror_ibfk_2;');
+//        CHARDB.read('ALTER TABLE ' + 'gm_go_mirror' + ' DROP FOREIGN KEY gm_go_mirror_ibfk_1, DROP FOREIGN KEY gm_go_mirror_ibfk_2;');
         CHARDB.read('ALTER TABLE ' + db_character_houses + ' DROP FOREIGN KEY gm_char_hs_ibfk_1;');
         CHARDB.read('ALTER TABLE ' + db_character_gameobjects + ' DROP FOREIGN KEY gm_char_go_ibfk_1;');
         CHARDB.read('ALTER TABLE ' + db_character_dummies + ' DROP FOREIGN KEY gm_char_dm_ibfk_1;');
@@ -107,7 +108,7 @@ function ResetDatabase() {
         CHARDB.read('ALTER TABLE ' + db_guild_gameobjects + ' DROP FOREIGN KEY gm_guild_go_ibfk_1;');
         CHARDB.read('ALTER TABLE ' + db_guild_dummies + ' DROP FOREIGN KEY gm_guild_dm_ibfk_1;');
         CHARDB.read('DROP TABLE IF EXISTS ' + db_gameobject_template + ';');
-        CHARDB.read('DROP TABLE IF EXISTS ' + db_gameobject_mirror + ';');
+//        CHARDB.read('DROP TABLE IF EXISTS ' + 'gm_go_mirror' + ';');
         CHARDB.read('DROP TABLE IF EXISTS ' + db_world_houselist + ';');
         CHARDB.read('DROP TABLE IF EXISTS ' + db_world_garrisonlist + ';');
         CHARDB.read('DROP TABLE IF EXISTS ' + db_character_houses + ';');
@@ -156,8 +157,8 @@ function HandleDatabase() {
     if (QuickDebug(db_guild_dummies)) console.log(QuickDebug(db_guild_dummies)); else console.log(db_guild_dummies + ' failed!');
     CHARDB.read(Q_go_creategotable);
     if (QuickDebug(db_gameobject_template)) console.log(QuickDebug(db_gameobject_template)); else console.log(db_gameobject_template + ' failed!');    
-    CHARDB.read(Q_go_createmirrortable);
-    if (QuickDebug(db_gameobject_mirror)) console.log(QuickDebug(db_gameobject_mirror)); else console.log(db_gameobject_mirror + ' failed!');
+//    CHARDB.read(Q_go_createmirrortable);
+//    if (QuickDebug(db_gameobject_mirror)) console.log(QuickDebug(db_gameobject_mirror)); else console.log(db_gameobject_mirror + ' failed!');
 }
 
 if (!SHOULD_RECREATE) HandleDatabase();

@@ -3,7 +3,7 @@ import { Ids } from "tswow-stdlib/Misc/Ids";
 import { DBC, SQL } from "wotlkdata";
 import { SQL_trinity_string } from "wotlkdata/sql/types/trinity_string";
 import { ArgsSqlStr, Q_exists, Q_exists_string, SqlStr, stringToSql } from "../Database/DatabaseFunctions";
-import { CHARDB, db_gameobject_mirror, db_gameobject_template } from "../Database/DatabaseSetup";
+import { CHARDB, db_gameobject_template } from "../Database/DatabaseSetup";
 
 /*
  * -------------------------------------
@@ -149,6 +149,9 @@ function GameObjectTemplateCreate(model: string, icon: string, id: string, name:
     if (DEBUG) console.log(query);
     CHARDB.read(query);
     console.log('Template ' + entry + ' created successfully!');
+    return entry;
+    /*
+    what the fuck? TODO: #12 remove this I guess (if we don't need mirrors)
     let getid: string = 'SELECT internalid FROM ' + db_gameobject_template + ' WHERE entry = ' + entry + ';';
     let lambimia: object[] = CHARDB.read(getid);
     lambimia = lambimia as [];
@@ -175,7 +178,7 @@ function GameObjectTemplateCreate(model: string, icon: string, id: string, name:
     else {
         console.log(lambimia);
     }
-    return entry;
+    return entry;*/
 }
 
 /**
