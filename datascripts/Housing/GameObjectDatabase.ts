@@ -21,7 +21,11 @@ const DEBUG = true;
 const HS_PATH = './modules/TLRExpansion/datascripts/Housing/housingobjects.json';
 
 // constant used for internal ID stuff for gameobject mirrors. change only if you know what you're doing
-const INTERNAL_HOUSING_TAG = 'HSOBJMIR'
+const INTERNAL_HOUSING_TAG = 'HSOBJMIR';
+
+// load base housing objects from JSON and create them
+// TODO: uncomment below
+//CreateHousingObjectsFromFile();
 
 export let human_objects: any[] = [];
 
@@ -80,7 +84,7 @@ const bottle_green_t3 = {
  * @returns boolean
  */
 export function GameObjectTemplateExists(id: string) : boolean {
-    return Q_exists_string(stringToSql(id), db_gameobject_template);
+    return Q_exists_string('id', db_gameobject_template, stringToSql(id));
 }
 
 function ValidateQuality(s: string) : number {
@@ -155,35 +159,6 @@ function GameObjectTemplateCreate(model: string, icon: string, id: string, name:
     CHARDB.read(query);
     console.log('Template ' + entry + ' created successfully!');
     return entry;
-    /*
-    what the fuck? TODO: #12 remove this I guess (if we don't need mirrors)
-    let getid: string = 'SELECT internalid FROM ' + db_gameobject_template + ' WHERE entry = ' + entry + ';';
-    let lambimia: object[] = CHARDB.read(getid);
-    lambimia = lambimia as [];
-    if (undefined !== lambimia && lambimia.length){
-        let internalid: number = -98;
-        if ((lambimia as unknown as object[]).length) {
-            lambimia = lambimia as any;
-            if (lambimia.length >= 1) internalid = Object.values((lambimia[0] as object)) as unknown as number; else internalid = -99;
-        }
-        if (internalid == -98) {
-            console.log('ID bug didnt change internalid');
-            return -5;
-        }
-        else if (internalid == -99) {
-            console.log('ID BUG didnt find shit');
-            return -6;
-        }
-        let mirrorid: string = SqlStr(id + INTERNAL_HOUSING_TAG);
-        query = 'INSERT INTO ' + db_gameobject_mirror + '(internalid, entry, id, name, type) VALUES (' + internalid + ',' + entry + ',' + mirrorid + ',' + args[3] + ',' + type_t + ');';
-        if (DEBUG) console.log(query);
-        CHARDB.read(query);
-        console.log('TemplateMirror ' + entry + ' created successfully!');
-    }
-    else {
-        console.log(lambimia);
-    }
-    return entry;*/
 }
 
 /**
@@ -306,13 +281,12 @@ function HousingItemCreate(id: string, name: string, icon: string, quality: numb
  */
 export function HousingObjectCreate(model: string, icon: string, id: string, name: string, quality: string, type_t: number = 5) {
     // TODO: test this thoroughly
-    // FIXME: show error messages only on debug
     let templateid: number = -1; // -1 as error
     let spellid: number = -1;
     let itemid: number = -1;
     let qual = ValidateQuality(quality);
     if (qual < 0 || qual > 6) {
-        console.log("Failed to create GameObjectTemplate " + id + "! Invalid item quality: " + quality);
+        if (DEBUG) console.log("Failed to create GameObjectTemplate " + id + "! Invalid item quality: " + quality);
         return;
     }
     templateid = GameObjectTemplateCreate(model, icon, id, name, qual, type_t);
@@ -320,17 +294,17 @@ export function HousingObjectCreate(model: string, icon: string, id: string, nam
         switch (templateid) {
             case 0:
             case -1:
-                console.log("Failed to create GameObjectTemplate " + id + "! Internal error. Report this!");
+                if (DEBUG) console.log("Failed to create GameObjectTemplate " + id + "! Internal error. Report this!");
                 return;
             case -3:
-                console.log("Failed to create GameObjectTemplate " + id + "! TSWoW couldn't generate an ID for itself. Report this!");
+                if (DEBUG) console.log("Failed to create GameObjectTemplate " + id + "! TSWoW couldn't generate an ID for itself. Report this!");
                 return;
             case -2:
             case -4:
-                console.log("Failed to create GameObjectTemplate " + id + "! GameObjectTemplate with this Display ID already exists.");
+                if (DEBUG) console.log("Failed to create GameObjectTemplate " + id + "! GameObjectTemplate with this Display ID already exists.");
                 return;
             default:
-                console.log("Unknown error creating GameObjectTemplate " + id + ". Please report this ASAP.");
+                if (DEBUG) console.log("Unknown error creating GameObjectTemplate " + id + ". Please report this ASAP.");
                 return;
         }
     }
@@ -340,12 +314,12 @@ export function HousingObjectCreate(model: string, icon: string, id: string, nam
         switch (spellid) {
             case 0:
             case -1:
-                console.log("Failed to create HousingSpell " + id + "! Internal error. Report this!");
+                if (DEBUG) console.log("Failed to create HousingSpell " + id + "! Internal error. Report this!");
                 return;
             case -2:
                 return;
             default:
-                console.log("Unknown error creating HousingSpell " + id + ". Please report this ASAP.");
+                if (DEBUG) console.log("Unknown error creating HousingSpell " + id + ". Please report this ASAP.");
                 return;
         }
     }
@@ -355,20 +329,20 @@ export function HousingObjectCreate(model: string, icon: string, id: string, nam
         switch (itemid) {
             case 0:
             case -1:
-                console.log("Failed to create HousingItem " + id + "! Internal error. Report this!");
+                if (DEBUG) console.log("Failed to create HousingItem " + id + "! Internal error. Report this!");
                 return;
             case -2:
-                console.log("Failed to create HousingItem " + id + "! Template with this ID already exists.");
+                if (DEBUG) console.log("Failed to create HousingItem " + id + "! Template with this ID already exists.");
                 return;
             default:
-                console.log("Unknown error creating HousingItem " + id + ". Please report this ASAP.");
+                if (DEBUG) console.log("Unknown error creating HousingItem " + id + ". Please report this ASAP.");
                 return;
         }
     }
     if (DEBUG) console.log("HousingItem created with ID " + itemid + "!");
 }
 
-HousingObjectCreate(table_t.model, table_t.icon, table_t.id, table_t.name, 'blue', table_t.type_t);
+//HousingObjectCreate(table_t.model, table_t.icon, table_t.id, table_t.name, 'blue', table_t.type_t);
 
 /* ---------
  * Functions
@@ -400,24 +374,21 @@ function HousingObjectExists(id: string) : boolean {
  * @returns void
  */
 function AddHousingObject(model: string, icon: string, id: string, name: string, quality: string, type_t: number = 5) {
-    let args: string[] = [model, id, name];
+    let args: string[] = [model, id];
     let obj: object = {model: 'placeholder', icon: 'placeholder', id: 'placeholder', name: 'placeholder', quality: 'gray', type_t: 5};
     let baseobj: object[] = [];
     baseobj.push(obj);
     if (!fs.existsSync(HS_PATH)) fs.writeFileSync(HS_PATH, JSON.stringify(baseobj, null, 2)); // create file if it doesn't exist
     for (let x = 0; x < args.length; x++) {
         if (HousingObjectExists(args[x])) {
-            if (DEBUG) console.log("There's already an housing object with ID " + args[x]);
+            if (DEBUG) console.log("There's already an housing object with ID or model " + args[x]);
             return;
         }
     }
     const file = fs.readFileSync(HS_PATH);
     let stuff: object[] = JSON.parse(file.toString());
-    console.log(file.toString());
-    console.log(JSON.stringify(stuff));
     const object: object = {model: model, icon: icon, id: id, name: name, quality: quality, type_t: type_t};
     stuff.push(object);
-    console.log(JSON.stringify(stuff));
     fs.writeFileSync(HS_PATH, JSON.stringify(stuff, null, 2));
     if (DEBUG) console.log('HousingObject ' + id + ' added successfully.');
 }
@@ -459,27 +430,69 @@ function RemoveHousingObject(id: string) : boolean {
     return true;
 }
 
-// TODO: delete
-function quicktest() {
-    console.log('Calling AddHousingObject()');
-    AddHousingObject(bottle_green_t.model, bottle_green_t.icon, bottle_green_t.id, bottle_green_t.name, 'white', 5);
-    console.log('Calling LoadHousingObject()');
-    let test = LoadHousingObject('lambmias');
-    if (test) console.log(JSON.stringify(test));
-    console.log('Calling RemoveHousingObject()');
-    console.log(RemoveHousingObject(bottle_green_t.id));
-    console.log('end quicktest()');
-}
-
-// TODO: this
+/**
+ * 
+ * @returns 
+ */
 function LoadHousingObjects() : object[] {
     let result: object[] = [];
     if (!fs.existsSync(HS_PATH)) return [];
-    
+    const file = fs.readFileSync(HS_PATH);
+    let r = JSON.parse(file.toString());
+    let objects: object[] = r as object[];
+    result = objects;
     return result;
+}
+
+function CreateHousingObjectsFromFile() {
+    const objects: object[] = LoadHousingObjects(); // load objects from json
+    if (objects === []) {
+        console.log('lambmias');
+        return;
+    } else console.log(objects.length);
+    let model: string;
+    let icon: string;
+    let id: string;
+    let name: string;
+    let quality: string;
+    let type_t: number;
+    for (let x = 0; x < objects.length; x++) {
+        model = (objects[x] as any).model;
+        icon = (objects[x] as any).icon;
+        id = (objects[x] as any).id;
+        name = (objects[x] as any).name;
+        quality = (objects[x] as any).quality;
+        type_t = (objects[x] as any).type_t;
+        if (!model || !icon || !id || !name || !quality || !type_t) {
+            console.log("Fatal error creating housing objects from file.");
+            return;
+        }
+        if (GameObjectTemplateExists(id)) {
+            console.log('ligma ' + id);
+            if (DEBUG) console.log('Skipping HousingObject ' + id);
+        } else {
+            if (DEBUG) console.log('Adding HousingObject ' + id + ' from file');
+            HousingObjectCreate(model, icon, id, name, quality, type_t);
+        }
+    }
 }
 
 // TODO: remove this for any release
 function generatetable() {
-
+    let x: any;
+    x = {model: 'World\\Generic\\orc\\passive doodads\\jars\\jarorc01.m2', icon: bottle_green_t.icon, id: 'placeholder1', name: 'xdzors', quality: 'white', type_t: 5};
+    AddHousingObject(x.model, x.icon, x.id, x.name, x.quality, x.type_t);
+    x = {model: 'World\\Generic\\orc\\passive doodads\\jars\\jarorc02.m2', icon: bottle_green_t.icon, id: 'placeholder2', name: 'xdzors', quality: 'white', type_t: 5};
+    AddHousingObject(x.model, x.icon, x.id, x.name, x.quality, x.type_t);
+    x = {model: 'World\\Generic\\orc\\passive doodads\\jars\\jarorc03.m2', icon: bottle_green_t.icon, id: 'placeholder3', name: 'xdzors', quality: 'white', type_t: 5};
+    AddHousingObject(x.model, x.icon, x.id, x.name, x.quality, x.type_t);
+    x = {model: 'World\\Generic\\orc\\passive doodads\\jars\\jarorc04.m2', icon: bottle_green_t.icon, id: 'placeholder4', name: 'xdzors', quality: 'white', type_t: 5};
+    AddHousingObject(x.model, x.icon, x.id, x.name, x.quality, x.type_t);
+    x = {model: 'World\\Generic\\orc\\passive doodads\\jars\\jarorc05.m2', icon: bottle_green_t.icon, id: 'placeholder5', name: 'xdzors', quality: 'white', type_t: 5};
+    AddHousingObject(x.model, x.icon, x.id, x.name, x.quality, x.type_t);
+    CreateHousingObjectsFromFile();
 }
+
+generatetable();
+let q = CHARDB.read('SELECT id FROM ' + db_gameobject_template);
+console.log(q);
