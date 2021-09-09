@@ -2,7 +2,7 @@ import { std } from "tswow-stdlib";
 import { Ids } from "tswow-stdlib/Misc/Ids";
 import { DBC, SQL } from "wotlkdata";
 import { ArgsSqlStr, Q_exists, Q_exists_string, SqlStr, stringToSql } from "../Database/DatabaseFunctions";
-import { CHARDB, db_gameobject_template } from "../Database/DatabaseSetup";
+import { CHARDB, db_gameobject_spellitem, db_gameobject_template } from "../Database/DatabaseSetup";
 import fs from 'fs';
 
 /*
@@ -26,50 +26,6 @@ const INTERNAL_HOUSING_TAG = 'HSOBJMIR';
 // load base housing objects from JSON and create them
 // TODO: uncomment below
 //CreateHousingObjectsFromFile();
-
-export let human_objects: any[] = [];
-
-const table_t = {
-    model: "World\\Generic\\Human\\Passive Doodads\\Tables\\inntable.m2",
-    icon: "Interface\\Icons\\Spell_Shadow_Brainwash.blp",
-    id: "hstablehuman",
-    name: "Table",
-    type_t: 5
-}
-human_objects.push(table_t);
-
-const bottle_green_t = {
-    model: "World\\Generic\\Human\\Passive Doodads\\Bottles\\GreenBottle02.mdx",
-    icon: "Interface\\Icons\\Spell_Shadow_Brainwash.blp",
-    id: "hs-bottle-green",
-    name: "Green Bottle",
-    type_t: 5
-}
-
-// use this as an example for what a gameobject needs to be created 
-const example_gameobject_info = {
-    model: "World\\Generic\\Human\\Passive Doodads\\Bottles\\GreenBottle02.mdx",
-    icon: "Interface\\Icons\\Spell_Shadow_Brainwash.blp",
-    id: "hs-bottle-green",
-    name: "Green Bottle",
-    type_t: 5
-}
-
-const bottle_green_t2 = {
-    model: "World\\Generic\\Human\\Passive Doodads\\Bottles\\GreenBottle02.mdx",
-    icon: "Interface\\Icons\\Spell_Shadow_Brainwash.blp",
-    id: "hs-bottle-green",
-    name: "Green Bottle",
-    type_t: 5
-}
-
-const bottle_green_t3 = {
-    model: stringToSql(bottle_green_t.model),
-    icon: stringToSql(bottle_green_t.icon),
-    id: stringToSql(bottle_green_t.id),
-    name: stringToSql(bottle_green_t.name),
-    type_t: bottle_green_t.type_t
-}
 
 /* ------------------------------
  * Database Variables and Queries
@@ -270,6 +226,13 @@ function HousingItemCreate(id: string, name: string, icon: string, quality: numb
     return item.ID;
 }
 
+function RegisterHousingSpellItem(internalid: number, entry: number, spellid: number, itemid: number) : boolean {
+    if (!internalid || !entry || !spellid || !itemid) return false;
+    let query: string = 'INSERT INTO ' + db_gameobject_spellitem + '(internalid, entry, spellid, itemid) VALUES (' + internalid + ',' + entry + ',' + spellid + ',' + itemid + ');';
+    CHARDB.read(query);
+    return true;
+}
+
 /**
  * 
  * @param model 
@@ -340,6 +303,14 @@ export function HousingObjectCreate(model: string, icon: string, id: string, nam
         }
     }
     if (DEBUG) console.log("HousingItem created with ID " + itemid + "!");
+    let query = 'SELECT internalid FROM ' + db_gameobject_template + ' WHERE id = ' + SqlStr(id) + ';';
+    if (DEBUG) console.log(query);
+    const q = CHARDB.read(query);
+    if (DEBUG) console.log(q);
+    let x:any = q[0] as any;
+    let query2 = 'INSERT INTO ' + db_gameobject_spellitem + '(internalid, entry, spellid, itemid) VALUES (' + x.internalid + ',' + templateid + ',' + spellid + ',' + itemid + ');';
+    if (DEBUG) console.log(query2);
+    CHARDB.read(query2);
 }
 
 //HousingObjectCreate(table_t.model, table_t.icon, table_t.id, table_t.name, 'blue', table_t.type_t);
@@ -493,8 +464,19 @@ function generatetable() {
 }
 
 generatetable();
-/*let q = CHARDB.read('SELECT id FROM ' + db_gameobject_template);
-console.log(q);*/
 
-let x = std.Spells.load(200030);
-console.log(x.objectify());
+
+let q = CHARDB.read('SELECT * FROM ' + db_gameobject_spellitem);
+console.log(q);
+
+/*function t(id: string) {
+    let query = 'SELECT internalid FROM ' + db_gameobject_template + ' WHERE id = ' + SqlStr(id) + ';';
+    if (DEBUG) console.log(query);
+    const q = CHARDB.read(query);
+    if (DEBUG) console.log(q);
+    let x: any;
+    x = q[0] as any;
+    console.log(x.internalid);
+}
+
+t('xxplaceholder2');*/
