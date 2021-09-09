@@ -1,6 +1,6 @@
 let DEBUG = true; // enable/disable verbose
 
-let spells: number[] = [200012, 200013];
+let spells: number[] = [200012, 200013, 200016, 200018];
 let x: TSSpell;
 let global: uint32 = 0;
 

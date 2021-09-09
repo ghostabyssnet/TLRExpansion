@@ -138,14 +138,14 @@ function GameObjectTemplateCreate(model: string, icon: string, id: string, name:
     let displayid = dinfo.ID.get(); // our wow database (dbc) displayid
     if (Q_exists(displayid, db_gameobject_template, 'displayid')) return -4; // no duplicate entries
     // creates a unique id for tswow for this gameobject
-    let tswowid: number = Ids.GameObjectTemplate.id("TLRHousing", id); // read below
-    // tswow creates an ID for this by itself, we will end up with 3 ids: internalid for SQL, id (TLRHousing-...) for tswow, ID for the actual game
+    let tswowid: number = Ids.GameObjectTemplate.id("TLRExpansion", id); // read below
+    // tswow creates an ID for this by itself, we will end up with 3 ids: internalid for SQL, id (TLRExpansion...) for tswow, ID for the actual game
     if (!tswowid) {
         console.log("TSWoW couldn't generate an TSWOWID for " + dinfo + '(' + name + ')'); // something went terribly wrong
         return -3;
     }
     let template = SQL.gameobject_template
-        .add(Ids.GameObjectTemplate.id("TLRHousing",id))
+        .add(tswowid)
         .displayId.set(dinfo.ID.get())
         .type.set(type_t)
         .size.set(1)
@@ -163,7 +163,7 @@ function GameObjectTemplateCreate(model: string, icon: string, id: string, name:
 
 /**
  * Deletes a GameObjectTemplate and related data
- * @param id a tswowid (without TLRHousing- or any prefix)
+ * @param id a tswowid (without TLRExpansion- or any prefix)
  * @returns BIG TODO:
  */
 export function GameObjectBaseDelete(deprecated: string, fixthis: string) : boolean {
@@ -231,7 +231,7 @@ function HousingSpellCreate(id: string, name: string, icon: string, entry: numbe
         console.log("HousingSpellCreate() ERROR: Template " + id + " doesn't exist!"); 
         return -2;
     }
-    let spl = std.Spells.create("TLRHousing", id, 61031);
+    let spl = std.Spells.create("TLRExpansion", id, 61031);
         spl.Name.enGB.set(name);
         spl.Description.enGB.set('Used in a house or garrison.');
         spl.CastTime.set(0,0,0);
@@ -254,19 +254,19 @@ function HousingSpellCreate(id: string, name: string, icon: string, entry: numbe
  * @param spellid Spell ID of what summons the object
  * @returns error or not
  */
-function HousingItemCreate(id: string, name: string, icon: string, quality: number, entry: number) : number {
+function HousingItemCreate(id: string, name: string, icon: string, quality: number, spellid: number) : number {
     if (!GameObjectTemplateExists(id)){
         console.log("HousingItemCreate() ERROR: Template " + id + " doesn't exist!"); 
         return -2;
     }
-    let item = std.Items.create("TLRHousing", id, 44606)
+    let item = std.Items.create("TLRExpansion", id, 44606)
             .Name.enGB.set(name)
             .Quality.set(quality)
             .Bonding.setNoBounds()
             .Description.enGB.set("Used in houses.")
             .DisplayInfo.Icon.set(icon).end
             .Spells.clearAll()
-            .Spells.add(entry).end
+            .Spells.add(spellid).end
     return item.ID;
 }
 
@@ -468,7 +468,6 @@ function CreateHousingObjectsFromFile() {
             return;
         }
         if (GameObjectTemplateExists(id)) {
-            console.log('ligma ' + id);
             if (DEBUG) console.log('Skipping HousingObject ' + id);
         } else {
             if (DEBUG) console.log('Adding HousingObject ' + id + ' from file');
@@ -479,7 +478,7 @@ function CreateHousingObjectsFromFile() {
 
 // TODO: remove this for any release
 function generatetable() {
-    let x: any;
+    /* let x: any;
     x = {model: 'World\\Generic\\orc\\passive doodads\\jars\\jarorc01.m2', icon: bottle_green_t.icon, id: 'placeholder1', name: 'xdzors', quality: 'white', type_t: 5};
     AddHousingObject(x.model, x.icon, x.id, x.name, x.quality, x.type_t);
     x = {model: 'World\\Generic\\orc\\passive doodads\\jars\\jarorc02.m2', icon: bottle_green_t.icon, id: 'placeholder2', name: 'xdzors', quality: 'white', type_t: 5};
@@ -489,10 +488,13 @@ function generatetable() {
     x = {model: 'World\\Generic\\orc\\passive doodads\\jars\\jarorc04.m2', icon: bottle_green_t.icon, id: 'placeholder4', name: 'xdzors', quality: 'white', type_t: 5};
     AddHousingObject(x.model, x.icon, x.id, x.name, x.quality, x.type_t);
     x = {model: 'World\\Generic\\orc\\passive doodads\\jars\\jarorc05.m2', icon: bottle_green_t.icon, id: 'placeholder5', name: 'xdzors', quality: 'white', type_t: 5};
-    AddHousingObject(x.model, x.icon, x.id, x.name, x.quality, x.type_t);
+    AddHousingObject(x.model, x.icon, x.id, x.name, x.quality, x.type_t);*/
     CreateHousingObjectsFromFile();
 }
 
 generatetable();
-let q = CHARDB.read('SELECT id FROM ' + db_gameobject_template);
-console.log(q);
+/*let q = CHARDB.read('SELECT id FROM ' + db_gameobject_template);
+console.log(q);*/
+
+let x = std.Spells.load(200030);
+console.log(x.objectify());
