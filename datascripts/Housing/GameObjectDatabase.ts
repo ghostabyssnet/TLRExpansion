@@ -91,6 +91,22 @@ function GetInternalId(id: string) : number {
     return result;
 }
 
+function GetMirrorId(entry: number) : number {
+    let result: number = -1;
+    let query = 'SELECT thisentry FROM ' + db_gameobject_mirror + ' WHERE entry = ' + entry + ';';
+    if (DEBUG) console.log(query);
+    const q = CHARDB.read(query);
+    if (q) {
+        let x: any;
+        x = q[0] as any;
+        if (x.thisentry) {
+            if (DEBUG) console.log('thisentry is: ' + x.thisentry);
+            result = x.thisentry;
+        }
+    }
+    return result;
+}
+
 /**
  * Creates a new GameObject Base Template and adds it to our database
  * ATTENTION: If you're looking to simply create a new housing object,
@@ -317,6 +333,7 @@ function RegisterHousingSpellItem(internalid: number, entry: number, spellid: nu
 export function HousingObjectCreate(model: string, icon: string, id: string, name: string, quality: string, type_t: number = 5) {
     // TODO: test this thoroughly
     let templateid: number = -1; // -1 as error
+    let mirrorid: number = -1;
     let spellid: number = -1;
     let itemid: number = -1;
     let qual = ValidateQuality(quality);
@@ -344,7 +361,13 @@ export function HousingObjectCreate(model: string, icon: string, id: string, nam
         }
     }
     if (DEBUG) console.log("GameObjectTemplate created with ID " + templateid + "!");
-    spellid = HousingSpellCreate(id, name, icon, templateid);
+    // TODO: change this when mirrors are removed
+    mirrorid = GetMirrorId(templateid);
+    if (mirrorid < 0) {
+        console.log("Error getting MirrorID for GameObjectTemplate " + templateid);
+        return;
+    }
+    spellid = HousingSpellCreate(id, name, icon, mirrorid);
     if (spellid <= 0) {
         switch (spellid) {
             case 0:
@@ -540,7 +563,8 @@ generatetable();
 
 let q = CHARDB.read('SELECT * FROM ' + db_gameobject_spellitem);
 console.log(q);
-
+let q2 = CHARDB.read('SELECT * FROM ' + db_gameobject_mirror);
+console.log(q2);
 /*function t(id: string) {
     let query = 'SELECT internalid FROM ' + db_gameobject_template + ' WHERE id = ' + SqlStr(id) + ';';
     if (DEBUG) console.log(query);

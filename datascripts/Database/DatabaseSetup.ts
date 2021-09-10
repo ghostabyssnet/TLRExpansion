@@ -13,7 +13,7 @@ const DB_INFO = 'TODO: #1 make database login info customizable in here (see CHA
 /**
  * If true, this custom database gets reset on startup
  */
-const SHOULD_RECREATE: boolean = true;
+const SHOULD_RECREATE: boolean = false;
 
 // might as well use this while you're at it, if you know what you're doing
 
@@ -99,13 +99,15 @@ function ResetDatabase() {
     if (!SHOULD_RECREATE) return;
     else {
         console.log("[TLRExpansion] RECREATING DATABASE...");
+        let x = CHARDB.read('SHOW CREATE TABLE ' + db_gameobject_mirror);
+        console.log(x);
         // TODO: add a check and make below code work properly
         // (yes, programmers, I know it's ugly)
         CHARDB.read('ALTER TABLE ' + db_gameobject_template + ';');
         CHARDB.read('ALTER TABLE ' + db_gameobject_spellitem + ' DROP FOREIGN KEY ' + db_gameobject_spellitem + '_ibfk_1;');
         CHARDB.read('ALTER TABLE ' + db_gameobject_spellitem + ' DROP FOREIGN KEY ' + db_gameobject_spellitem + '_ibfk_2;');
         CHARDB.read('ALTER TABLE ' + db_character_houses + ' DROP FOREIGN KEY gm_char_hs_ibfk_1;');
-//        CHARDB.read('ALTER TABLE ' + db_gameobject_mirror + ' DROP FOREIGN KEY gm_go_mirror_ibfk_1, DROP FOREIGN KEY gm_go_mirror_ibfk_2;');
+        CHARDB.read('ALTER TABLE ' + db_gameobject_mirror + ' DROP FOREIGN KEY gm_go_mirror_ibfk_1, DROP FOREIGN KEY gm_go_mirror_ibfk_2;');
         CHARDB.read('ALTER TABLE ' + db_character_gameobjects + ' DROP FOREIGN KEY gm_char_go_ibfk_1;');
         CHARDB.read('ALTER TABLE ' + db_character_dummies + ' DROP FOREIGN KEY gm_char_dm_ibfk_1;');
         CHARDB.read('ALTER TABLE ' + db_guild_houses + ' DROP FOREIGN KEY gm_guild_hs_ibfk_1;');
