@@ -2,9 +2,8 @@ import { std } from "tswow-stdlib";
 import { Ids } from "tswow-stdlib/Misc/Ids";
 import { DBC, SQL } from "wotlkdata";
 import { ArgsSqlStr, Q_exists, Q_exists_string, SqlStr, stringToSql } from "../Database/DatabaseFunctions";
-import { CHARDB, db_gameobject_mirror, db_gameobject_spellitem, db_gameobject_template } from "../Database/DatabaseSetup";
+import { CHARDB, db_gameobject_creature, db_gameobject_mirror, db_gameobject_spellitem, db_gameobject_template } from "../Database/DatabaseSetup";
 import fs from 'fs';
-import { HousingCreatureTemplateCreate } from "./CreatureDatabase";
 
 /*
  * -------------------------------------
@@ -36,7 +35,50 @@ const Q_id_count: string = 'SELECT COUNT(internalid) FROM ' + db_gameobject_temp
 */
 
 // TODO: #8 don't forget the whole importing templates from json thing
+// don't touch if you don't know what you're doing
+export const HS_CREATURE_TAG: string = 'HSCREATURE';
 
+/* ------------------------------
+ * Basic Wisp (selector) Creature
+ * ------------------------------
+*/
+
+/* housing wisp should be:
+ * allied to alliance and horde
+ * invulnerable
+ * phased to (housing) phase
+*/
+export const HOUSING_WISP = std.CreatureTemplates.create('TLRExpansion', 'wisp', 3681);
+HOUSING_WISP.Scale.set(0.5);
+HOUSING_WISP.FlagsExtra.set(536870912 + 66);
+HOUSING_WISP.MovementType.setIdle();
+HOUSING_WISP.UnitFlags.NonAttackable.mark();
+
+// TODO: guild creatures (for wars: walls, doors, etc. they have health and stuff)
+
+function HousingCreatureTemplateExists(entry: number) : boolean {
+    let query = 'SELECT internalid FROM ' + db_gameobject_creature + ' WHERE entry = ' + entry + ';';
+    const x = CHARDB.read(query);
+    if (x.length >= 1) return true;
+    return false;
+}
+
+export function HousingCreatureTemplateCreate(name: string, id: string) : number {
+    let entry:number = GetGameObjectEntry(id);
+    if (id.includes(HS_CREATURE_TAG)) return -2; // our special tag is special!
+    if (HousingCreatureTemplateExists(entry)) return -3;
+    // we'll take our housing wisp as base
+    let wisp_id:number = HOUSING_WISP.ID;
+    let result:number = -1; // returns our creature template id or -1 as error
+    const CREATURE = std.CreatureTemplates.create('TLRExpansion', HS_CREATURE_TAG + id, wisp_id);
+    CREATURE.Name.enGB.set(name);
+    result = CREATURE.ID;
+    let internalid:number = GetInternalId(id);
+    let query:string = 'INSERT INTO ' + db_gameobject_creature + '(internalid, entry, thisentry) VALUES (' + internalid + ',' + entry + ',' + result + ');';
+    if (DEBUG) console.log(query);
+    CHARDB.read(query);
+    return result;
+}
 /**
  * Returns if a GameObject Template exists
  * @param id A TSWoW (TLRSomething...) id, no prefix
@@ -206,7 +248,7 @@ function GameObjectTemplateCreate(model: string, icon: string, id: string, name:
     else {
         if (DEBUG) console.log("Mirror object with entry " + mirror + " created successfully");
     }
-    let c: number = HousingCreatureTemplateCreate(name, id);
+    let c = HousingCreatureTemplateCreate(name, id);
     if (c <= 0) {
         console.log("Error attempting to create creature for object " + id);
         return entry;

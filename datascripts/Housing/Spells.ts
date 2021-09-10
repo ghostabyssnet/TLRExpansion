@@ -19,3 +19,11 @@ const HOUSING_SPELL = std.Spells.create("TLRHousing", "housing-spell", 7301)
     .Duration.set(3600000, 0, 3600000)
     HOUSING_SPELL.Effects.get(0).AuraType.setDummy();
     HOUSING_SPELL.Effects.get(1).clear();
+
+const GM_HOUSING = std.Spells.create("TLRHousing", "gamemaster", 2061)
+    .Name.enGB.set("GM Housing Stuff")
+    .CastTime.set(0, 0, 0)
+    .Power.setMana(0)
+    .Cooldown.set(0, 0, 0, 0)
+    .Duration.set(0, 0, 0);
+GM_HOUSING.Effects.get(0).clear();

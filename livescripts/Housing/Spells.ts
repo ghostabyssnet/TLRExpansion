@@ -6,8 +6,11 @@ let mirrorobjects: TSArray<uint32> = [];
 let mirrorobjectsentry: TSArray<uint32> = []; // original entry instead of mirror entry
 let areaids: TSArray<uint32> = [4410]; // TODO: this, properly
 let spawnTemplateId: uint32 = 0;
+let spawnSpellId: uint32 = 0;
 let spawnMirrorId: uint32 = 0;
 let spawnCreatureId: uint32 = 0;
+let spawnedObject: TSGameObject;
+let spawnedCreature: TSCreature;
 
 let posx: float = 0;
 let posy: float = 0;
@@ -51,7 +54,7 @@ const Q_go_char_instance_create: string = 'INSERT INTO ' + db_character_gameobje
  * @param spell passthrough
  * @param templateid gameobject template entry
  */
-function castHousingSpell(spell: TSSpell, templateid: number, creatureid: number) {
+function castHousingSpell(spell: TSSpell, templateid: uint32, creatureid: uint32) {
     spell.GetCaster().ToPlayer().SendBroadcastMessage("[DEBUG] Housing Spell");
     if (DEBUG) console.log("x: " + spell.GetTargetDest().x + ", y: " + spell.GetTargetDest().y + ", z: " + spell.GetTargetDest().z + ", o: " +spell.GetTargetDest().o);
     if (DEBUG) console.log("area id: " + spell.GetCaster().ToPlayer().GetAreaId());
@@ -64,7 +67,10 @@ function castHousingSpell(spell: TSSpell, templateid: number, creatureid: number
     posy = spell.GetTargetDest().y;
     posz = spell.GetTargetDest().z;
     o = spell.GetTargetDest().o;
-    //spell.GetCaster().ToPlayer().SummonGameObject();
+    spawnedObject = spell.GetCaster().ToPlayer().SummonGameObject(templateid, posx, posy, posz, o, 0);
+    spawnedCreature = spell.GetCaster().ToPlayer().SpawnCreature(creatureid, posx, posy, posz, o, 5, 0);
+    console.log(spawnedObject.GetEntry());
+    console.log(spawnedCreature.GetEntry());
 }
 
 /**
@@ -149,19 +155,27 @@ function onCast(spell: TSSpell) {
         if (spells[x] === spell.GetEntry()) {
             // its a housing spell. let's query
             ClearSpawnInfo();
-            let _query:string = 'SELECT entry FROM ' + db_gameobject_template + ' WHERE spellid = ' + spell.GetEntry() + ';';
-            let query = QueryCharacters('SELECT entry FROM ' + db_gameobject_template + ' WHERE spellid = ' + spell.GetEntry() + ';');
+            let _query:string = 'SELECT entry FROM ' + db_gameobject_spellitem + ' WHERE ' + 'spellid = ' + spell.GetEntry() + ';';
+            let query = QueryCharacters(_query);
             if (DEBUG) console.log(_query);
             while (query.GetRow()) {
                 spawnTemplateId = query.GetUInt32(0);
             }
+            if (DEBUG) console.log(spawnTemplateId);
+            /*_query = 'SELECT entry FROM ' + db_gameobject_template + ' WHERE spellid = ' + spell.GetEntry() + ';';
+            query = QueryCharacters(_query);
+            if (DEBUG) console.log(_query);
+            while (query.GetRow()) {
+                spawnTemplateId = query.GetUInt32(0);
+            }*/
             // no need for mirrors? -> let _query = QueryCharacters('SELECT thisentry FROM '...)
-            _query = 'SELECT thisentry FROM ' + db_gameobject_creature + ' WHERE entry = ' + spawnTemplateId + ';';
-            query = QueryCharacters('SELECT thisentry FROM ' + db_gameobject_creature + ' WHERE entry = ' + spawnTemplateId + ';');
+            _query = 'SELECT thisentry FROM ' + db_gameobject_creature + ' WHERE ' + 'entry = ' + spawnTemplateId + ';';
+            query = QueryCharacters(_query);
             if (DEBUG) console.log(_query);
             while (query.GetRow()) {
                 spawnCreatureId = query.GetUInt32(0);
             }
+            if (DEBUG) console.log(spawnCreatureId);
             castHousingSpell(spell, spawnTemplateId, spawnCreatureId); // TODO: add mirrors if something goes wrong
             return;
         }
