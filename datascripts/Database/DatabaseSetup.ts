@@ -33,8 +33,10 @@ const DEBUG: boolean = false;
 export const db_gameobject_mirror: string = 'gm_go_mirror'; // possibly remove this when new tswow patch drops
 export const db_gameobject_template: string = 'gm_go_template';
 
-//spellitem database: defines spells and items after the template has been made
+// spellitem database: defines spells and items after the template has been made
 export const db_gameobject_spellitem: string = 'gm_go_spellitem';
+// creature database: defines the wisps (not the guild v guild stuff!) used for building
+export const db_gameobject_creature: string = 'gm_go_creature';
 
 export const db_world_houselist: string = 'gm_world_houselist';
 export const db_world_garrisonlist: string = 'gm_world_garrisonlist';
@@ -79,6 +81,9 @@ const Q_go_createspellitemtable: string = 'CREATE TABLE IF NOT EXISTS ' + db_gam
 // TODO: #13 remove this shit if mirrors aren't needed
 const Q_go_createmirrortable: string = 'CREATE TABLE IF NOT EXISTS ' + db_gameobject_mirror + '(internalid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,entry int(10) unsigned NOT NULL UNIQUE, thisentry int(10) unsigned NOT NULL UNIQUE, FOREIGN KEY(internalid) REFERENCES ' + db_gameobject_template + '(internalid), FOREIGN KEY(entry) REFERENCES ' + db_gameobject_template + '(entry));';
 
+// create wisp (selector) creature table
+const Q_go_createcreaturetable: string = 'CREATE TABLE IF NOT EXISTS ' + db_gameobject_creature + '(internalid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,entry int(10) unsigned NOT NULL UNIQUE, thisentry int(10) unsigned NOT NULL UNIQUE, FOREIGN KEY(internalid) REFERENCES ' + db_gameobject_template + '(internalid), FOREIGN KEY(entry) REFERENCES ' + db_gameobject_template + '(entry));';
+
 /* -----------------
  * Database Creation
  * -----------------
@@ -99,8 +104,6 @@ function ResetDatabase() {
     if (!SHOULD_RECREATE) return;
     else {
         console.log("[TLRExpansion] RECREATING DATABASE...");
-        let x = CHARDB.read('SHOW CREATE TABLE ' + db_gameobject_mirror);
-        console.log(x);
         // TODO: add a check and make below code work properly
         // (yes, programmers, I know it's ugly)
         CHARDB.read('ALTER TABLE ' + db_gameobject_template + ';');
@@ -108,6 +111,7 @@ function ResetDatabase() {
         CHARDB.read('ALTER TABLE ' + db_gameobject_spellitem + ' DROP FOREIGN KEY ' + db_gameobject_spellitem + '_ibfk_2;');
         CHARDB.read('ALTER TABLE ' + db_character_houses + ' DROP FOREIGN KEY gm_char_hs_ibfk_1;');
         CHARDB.read('ALTER TABLE ' + db_gameobject_mirror + ' DROP FOREIGN KEY gm_go_mirror_ibfk_1, DROP FOREIGN KEY gm_go_mirror_ibfk_2;');
+        CHARDB.read('ALTER TABLE ' + db_gameobject_creature + ' DROP FOREIGN KEY gm_go_creature_ibfk_1, DROP FOREIGN KEY gm_go_creature_ibfk_2;');
         CHARDB.read('ALTER TABLE ' + db_character_gameobjects + ' DROP FOREIGN KEY gm_char_go_ibfk_1;');
         CHARDB.read('ALTER TABLE ' + db_character_dummies + ' DROP FOREIGN KEY gm_char_dm_ibfk_1;');
         CHARDB.read('ALTER TABLE ' + db_guild_houses + ' DROP FOREIGN KEY gm_guild_hs_ibfk_1;');
@@ -116,6 +120,7 @@ function ResetDatabase() {
         CHARDB.read('DROP TABLE IF EXISTS ' + db_gameobject_template + ';');
         CHARDB.read('DROP TABLE IF EXISTS ' + db_gameobject_spellitem + ';');
         CHARDB.read('DROP TABLE IF EXISTS ' + db_gameobject_mirror + ';');
+        CHARDB.read('DROP TABLE IF EXISTS ' + db_gameobject_creature + ';');
         CHARDB.read('DROP TABLE IF EXISTS ' + db_world_houselist + ';');
         CHARDB.read('DROP TABLE IF EXISTS ' + db_world_garrisonlist + ';');
         CHARDB.read('DROP TABLE IF EXISTS ' + db_character_houses + ';');
@@ -168,6 +173,8 @@ function HandleDatabase() {
     if (QuickDebug(db_gameobject_spellitem)) console.log(QuickDebug(db_gameobject_spellitem)); else console.log(db_gameobject_spellitem + ' failed!');        
     CHARDB.read(Q_go_createmirrortable);
     if (QuickDebug(db_gameobject_mirror)) console.log(QuickDebug(db_gameobject_mirror)); else console.log(db_gameobject_mirror + ' failed!');
+    CHARDB.read(Q_go_createcreaturetable);
+    if (QuickDebug(db_gameobject_creature)) console.log(QuickDebug(db_gameobject_creature)); else console.log(db_gameobject_creature + ' failed!');
 }
 
 if (!SHOULD_RECREATE) HandleDatabase();

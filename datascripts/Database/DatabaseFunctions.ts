@@ -2,6 +2,8 @@ import { CHARDB } from "./DatabaseSetup";
 
 // general database function library
 
+const DEBUG = true;
+
 /* ---------------------------------
  * Utility Functions for Raw Queries
  * ---------------------------------

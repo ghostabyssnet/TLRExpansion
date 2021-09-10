@@ -4,6 +4,7 @@ import { DBC, SQL } from "wotlkdata";
 import { ArgsSqlStr, Q_exists, Q_exists_string, SqlStr, stringToSql } from "../Database/DatabaseFunctions";
 import { CHARDB, db_gameobject_mirror, db_gameobject_spellitem, db_gameobject_template } from "../Database/DatabaseSetup";
 import fs from 'fs';
+import { HousingCreatureTemplateCreate } from "./CreatureDatabase";
 
 /*
  * -------------------------------------
@@ -22,6 +23,8 @@ const HS_PATH = './modules/TLRExpansion/datascripts/Housing/housingobjects.json'
 
 // constant used for internal ID stuff for gameobject mirrors. change only if you know what you're doing
 const INTERNAL_HOUSING_TAG = 'HSOBJMIR';
+
+const Q_id_count: string = 'SELECT COUNT(internalid) FROM ' + db_gameobject_template + ';';
 
 // load base housing objects from JSON and create them
 // TODO: uncomment below
@@ -69,12 +72,32 @@ function ValidateQuality(s: string) : number {
     return -1;
 }
 
+export function GetGameObjectInternalIdCount() : number {
+    let result:number = -1;
+    let query = Q_id_count;
+    if (DEBUG) console.log(query);
+    const q = CHARDB.read(query);
+    if (q) {
+        let x: any;
+        x = q[0] as any;
+        if (x) {
+            let r:number = -1;
+            if (DEBUG) console.log('internalid is: ' + Object.values(x)[0]);
+            if (Object.values(x)[0]) r = Object.values(x)[0] as number; 
+            result = r;
+        }
+    }
+    return result;
+}
+
+// TODO: rename to GetGameObjectInternalId or something, or don't rename if we're doing classes
+
 /**
  * Returns internal SQL ID for a game object template
  * @param id the (string) id registered in the table
  * @returns internalid, or -1 as error
  */
-function GetInternalId(id: string) : number {
+export function GetInternalId(id: string) : number {
     let result: number = -1;
     let query = 'SELECT internalid FROM ' + db_gameobject_template + ' WHERE id = ' + SqlStr(id) + ';';
     if (DEBUG) console.log(query);
@@ -86,6 +109,23 @@ function GetInternalId(id: string) : number {
         if (x.internalid) {
             if (DEBUG) console.log('internalid is: ' + x.internalid);
             result = x.internalid;
+        }
+    }
+    return result;
+}
+
+export function GetGameObjectEntry(id: string) : number {
+    let result: number = -1;
+    let query = 'SELECT entry FROM ' + db_gameobject_template + ' WHERE id = ' + SqlStr(id) + ';';
+    if (DEBUG) console.log(query);
+    const q = CHARDB.read(query);
+    if (DEBUG) console.log('entry in: ' + q);
+    if (q) {
+        let x: any;
+        x = q[0] as any;
+        if (x.entry) {
+            if (DEBUG) console.log('entry is: ' + x.entry);
+            result = x.entry;
         }
     }
     return result;
@@ -165,6 +205,11 @@ function GameObjectTemplateCreate(model: string, icon: string, id: string, name:
     }
     else {
         if (DEBUG) console.log("Mirror object with entry " + mirror + " created successfully");
+    }
+    let c: number = HousingCreatureTemplateCreate(name, id);
+    if (c <= 0) {
+        console.log("Error attempting to create creature for object " + id);
+        return entry;
     }
     return entry;
 }
