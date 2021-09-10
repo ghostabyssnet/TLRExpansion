@@ -2,7 +2,7 @@ import { std } from "tswow-stdlib";
 import { Ids } from "tswow-stdlib/Misc/Ids";
 import { DBC, SQL } from "wotlkdata";
 import { ArgsSqlStr, Q_exists, Q_exists_string, SqlStr, stringToSql } from "../Database/DatabaseFunctions";
-import { CHARDB, db_gameobject_spellitem, db_gameobject_template } from "../Database/DatabaseSetup";
+import { CHARDB, db_gameobject_mirror, db_gameobject_spellitem, db_gameobject_template } from "../Database/DatabaseSetup";
 import fs from 'fs';
 
 /*
@@ -70,6 +70,28 @@ function ValidateQuality(s: string) : number {
 }
 
 /**
+ * Returns internal SQL ID for a game object template
+ * @param id the (string) id registered in the table
+ * @returns internalid, or -1 as error
+ */
+function GetInternalId(id: string) : number {
+    let result: number = -1;
+    let query = 'SELECT internalid FROM ' + db_gameobject_template + ' WHERE id = ' + SqlStr(id) + ';';
+    if (DEBUG) console.log(query);
+    const q = CHARDB.read(query);
+    if (DEBUG) console.log('internalid in: ' + q);
+    if (q) {
+        let x: any;
+        x = q[0] as any;
+        if (x.internalid) {
+            if (DEBUG) console.log('internalid is: ' + x.internalid);
+            result = x.internalid;
+        }
+    }
+    return result;
+}
+
+/**
  * Creates a new GameObject Base Template and adds it to our database
  * ATTENTION: If you're looking to simply create a new housing object,
  * THIS IS NOT THE FUNCTION TO USE. Use HousingObjectCreate() instead!!!
@@ -109,12 +131,62 @@ function GameObjectTemplateCreate(model: string, icon: string, id: string, name:
         .Data1.set(0)
         .name.set(name);
     let entry = template.entry.get(); // our wow database (dbc) unique entry
-
     let query: string = 'INSERT INTO ' + db_gameobject_template + '(entry, id, displayid, icon, name, rarity, type) VALUES (' + entry + ',' + args[2] + ',' + displayid + ',' + args[1] + ',' + args[3] + ',' + rarity + ',' + type_t + ');';
     if (DEBUG) console.log(query);
     CHARDB.read(query);
     console.log('Template ' + entry + ' created successfully!');
+    let internalid:number = GetInternalId(id);
+    if (internalid < 0) {
+        console.log("Error attempting to get internalid for ID " + id);
+        console.log("Mirror Object for id " + id + " could not be created.");
+        return entry;
+    }
+    // the code below already generates a query
+    let mirror = GameObjectMirrorCreate(internalid, displayid, entry, id, name, type_t);
+    if (mirror <= 0) {
+        console.log("Error attempting to create mirror for object " + id);
+        return entry;
+    }
+    else {
+        if (DEBUG) console.log("Mirror object with entry " + mirror + " created successfully");
+    }
     return entry;
+}
+
+// TODO: test this
+
+/**
+ * creates a mirror for housing gameobjects
+ * @param internalid internal ID of the base object in the database
+ * @param dinfo gameobject display info ID
+ * @param entry entry ID of the base object
+ * @param id same id as the base object
+ * @param name same name as the base object
+ * @param type_t same type as the base object
+ * @returns thisentry: entry ID for the mirror object or negative numbers for errors
+ */
+function GameObjectMirrorCreate(internalid: number, displayid: number, entry: number, id: string, name: string, type_t: number) : number {
+    let _id: string = INTERNAL_HOUSING_TAG + id;
+    let tswowid: number = Ids.GameObjectTemplate.id("TLRExpansion", _id);
+    if (!tswowid) {
+        console.log("TSWoW couldn't generate an TSWOWID for " + displayid + ' (mirror)'); // something went terribly wrong
+        return -3;
+    }
+    let template = SQL.gameobject_template
+        .add(tswowid)
+        .displayId.set(displayid)
+        .type.set(type_t)
+        .size.set(1)
+        .Data0.set(0)
+        .Data1.set(0)
+        .name.set(name);
+    let thisentry = template.entry.get(); // our wow database (dbc) unique entry
+    if (!thisentry) return -1;
+    let _query: string = 'INSERT INTO ' + db_gameobject_mirror + '(internalid, entry, thisentry) VALUES (' + internalid + ',' + entry + ',' + thisentry + ');';
+    if (DEBUG) console.log(_query);
+    CHARDB.read(_query);
+    if (DEBUG) console.log('Creating mirror object for entry ' + entry + ' with new entry ' + thisentry);
+    return thisentry;
 }
 
 /**
