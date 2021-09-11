@@ -1,0 +1,50 @@
+[
+  {
+    "model": "placeholder",
+    "icon": "placeholder",
+    "id": "rememberthatgmisplaceholder",
+    "name": "changegmwhenreleasing",
+    "quality": "gray",
+    "type_t": 5
+  },
+  {
+    "model": "World\\Generic\\orc\\passive doodads\\jars\\jarorc01.m2",
+    "icon": "Interface\\Icons\\Spell_Shadow_Brainwash.blp",
+    "id": "sgmorcjar1",
+    "name": "orcjar1",
+    "quality": "white",
+    "type_t": 5
+  },
+  {
+    "model": "World\\Generic\\orc\\passive doodads\\jars\\jarorc02.m2",
+    "icon": "Interface\\Icons\\Spell_Shadow_Brainwash.blp",
+    "id": "sgmorcjar2",
+    "name": "orcjar2",
+    "quality": "green",
+    "type_t": 5
+  },
+  {
+    "model": "World\\Generic\\orc\\passive doodads\\jars\\jarorc03.m2",
+    "icon": "Interface\\Icons\\Spell_Shadow_Brainwash.blp",
+    "id": "sgmorcjar3",
+    "name": "orcjar3",
+    "quality": "blue",
+    "type_t": 5
+  },
+  {
+    "model": "World\\Generic\\orc\\passive doodads\\jars\\jarorc04.m2",
+    "icon": "Interface\\Icons\\Spell_Shadow_Brainwash.blp",
+    "id": "sgmorcjar4",
+    "name": "orcjar4",
+    "quality": "purple",
+    "type_t": 5
+  },
+  {
+    "model": "World\\Generic\\orc\\passive doodads\\jars\\jarorc05.m2",
+    "icon": "Interface\\Icons\\Spell_Shadow_Brainwash.blp",
+    "id": "sgmorcjar5",
+    "name": "orcjar5",
+    "quality": "orange",
+    "type_t": 5
+  }
+]
