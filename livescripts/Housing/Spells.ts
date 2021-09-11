@@ -72,6 +72,19 @@ function castHousingSpell(spell: TSSpell, templateid: uint32, creatureid: uint32
     posz = spell.GetTargetDest().z;
     o = spell.GetTargetDest().o;
     spawnedObject = spell.GetCaster().ToPlayer().SummonGameObject(templateid, posx, posy, posz, o, 0);
+    console.log("st: " + spell.GetCaster().GetMap().GetWorldObject(spawnedObject.GetGUID()).GetGUID());
+    let _query: TSDatabaseResult = QueryWorld('SELECT id FROM gameobject WHERE guid = ' + spawnedObject.GetGUID());
+    while (_query.GetRow()) {
+        console.log("query 1: " + _query.GetUInt16(0));
+    }
+    // test2: lets see all guids from our template id
+    let t: string = "SELECT guid FROM gameobject;";
+    let _query2: TSDatabaseResult = QueryWorld(t);
+    console.log(t);
+    console.log("cheddar: " + _query2.IsValid());
+    while (_query2.GetRow()) {
+        console.log("query 2: " + _query2.GetUInt64(0));
+    }
     spawnedCreature = spell.GetCaster().ToPlayer().SpawnCreature(creatureid, posx, posy, posz, o, 5, 0);
     /*console.log("stuff: " + spawnedObject.GetGUIDLow());
     console.log("stuff: " + spawnedObject.GetGUID());*/
@@ -79,7 +92,8 @@ function castHousingSpell(spell: TSSpell, templateid: uint32, creatureid: uint32
     console.log("stuff: " + spawnedCreature.GetGUID());
     console.log("stuff: " + spawnedCreature.GetDBTableGUIDLow());
     let _spawnedObject = spawnedObject.GetMap().GetWorldObject(spawnedObject.GetGUID());
-    spawnedObject.RemoveFromWorld(true);
+    // spawnedObject.IsSpawned();
+    //spawnedObject.RemoveFromWorld(true);
     spawnedCreature.DespawnOrUnsummon(100);
     console.log("b: " + _spawnedObject.GetGUID());
 }
@@ -203,7 +217,7 @@ function onHousingCommand(player: TSPlayer, type: number, lang: number, msg: TSM
     if (msg.get().includes("!a")) {
         console.log("testA");
         player.SendBroadcastMessage("assert A!");
-        let query: string = 'SELECT * FROM gameobject WHERE guid=90446;';
+        let query: string = 'SELECT guid FROM gameobject WHERE guid=90446;';
         console.log(query);
         const _query: TSDatabaseResult = QueryWorld(query);
         while (_query.GetRow()) {
