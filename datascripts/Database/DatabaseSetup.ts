@@ -1,4 +1,5 @@
 import { SQL } from "wotlkdata";
+import fs from 'fs';
 
 const DB_INFO = 'TODO: #1 make database login info customizable in here (see CHARDB below)';
 
@@ -13,7 +14,7 @@ const DB_INFO = 'TODO: #1 make database login info customizable in here (see CHA
 /**
  * If true, this custom database gets reset on startup
  */
-const SHOULD_RECREATE: boolean = true;
+const SHOULD_RECREATE: boolean = false;
 
 // might as well use this while you're at it, if you know what you're doing
 
@@ -178,28 +179,57 @@ function HandleDatabase() {
 }
 
 if (!SHOULD_RECREATE) HandleDatabase();
+
+/*function TableToJson() {
+    let result: string[] = [];
+    let str: string[] = [];
+    str.push(db_gameobject_mirror);
+    str.push(db_gameobject_template);
+    str.push(db_gameobject_spellitem);
+    str.push(db_gameobject_creature);
+    str.push(db_world_houselist);
+    str.push(db_world_garrisonlist); 
+    str.push(db_character_houses);
+    str.push(db_character_gameobjects);
+    str.push(db_character_dummies);
+    str.push(db_guild_houses);
+    str.push(db_guild_gameobjects);
+    str.push(db_guild_dummies);
+    for (let x = 0; x < str.length; x++) {
+        let q = CHARDB.read('SHOW CREATE TABLE ' + str[x] + ';');
+        q = q as object;
+        result.push(JSON.stringify(q, null, 2));
+    }
+    let r = result.join();
+    fs.writeFileSync('./dbinfo.json', r);
+}
+TableToJson();*/
+
 /*
  * TODO: #10 remove this when I'm sure stuff won't break
 */
-/*let xd = [];
-let cs0 = CHARDB.read('SHOW CREATE TABLE ' + db_world_houselist);
-xd[0] = cs0;
-let cs1 = CHARDB.read('SHOW CREATE TABLE ' + db_world_garrisonlist);
-xd[1] = cs1;
-let cs2 = CHARDB.read('SHOW CREATE TABLE ' + db_gameobject_mirror);
-xd[2] = cs2;
-let cs3 = CHARDB.read('SHOW CREATE TABLE ' + db_character_houses);
-xd[3] = cs3;
-let cs4 = CHARDB.read('SHOW CREATE TABLE ' + db_character_gameobjects);
-xd[4] = cs4;
-let cs5 = CHARDB.read('SHOW CREATE TABLE ' + db_character_dummies);
-xd[5] = cs5;
-let cs6 = CHARDB.read('SHOW CREATE TABLE ' + db_guild_houses);
-xd[6] = cs6;
-let cs7 = CHARDB.read('SHOW CREATE TABLE ' + db_guild_gameobjects);
-xd[7] = cs7;
-let cs8 = CHARDB.read('SHOW CREATE TABLE ' + db_guild_dummies);
-xd[8] = cs8;
-let cs9 = CHARDB.read('SHOW CREATE TABLE ' + db_gameobject_template);
-xd[9] = cs9;
-console.log(xd);*/
+
+/*
+let xd = [];
+    let cs0 = CHARDB.read('SHOW CREATE TABLE ' + db_world_houselist);
+    xd[0] = cs0;
+    let cs1 = CHARDB.read('SHOW CREATE TABLE ' + db_world_garrisonlist);
+    xd[1] = cs1;
+    let cs2 = CHARDB.read('SHOW CREATE TABLE ' + db_gameobject_mirror);
+    xd[2] = cs2;
+    let cs3 = CHARDB.read('SHOW CREATE TABLE ' + db_character_houses);
+    xd[3] = cs3;
+    let cs4 = CHARDB.read('SHOW CREATE TABLE ' + db_character_gameobjects);
+    xd[4] = cs4;
+    let cs5 = CHARDB.read('SHOW CREATE TABLE ' + db_character_dummies);
+    xd[5] = cs5;
+    let cs6 = CHARDB.read('SHOW CREATE TABLE ' + db_guild_houses);
+    xd[6] = cs6;
+    let cs7 = CHARDB.read('SHOW CREATE TABLE ' + db_guild_gameobjects);
+    xd[7] = cs7;
+    let cs8 = CHARDB.read('SHOW CREATE TABLE ' + db_guild_dummies);
+    xd[8] = cs8;
+    let cs9 = CHARDB.read('SHOW CREATE TABLE ' + db_gameobject_template);
+    xd[9] = cs9;
+    console.log(xd);
+*/

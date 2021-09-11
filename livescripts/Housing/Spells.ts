@@ -1,3 +1,5 @@
+import { spawnSync } from "child_process";
+
 let DEBUG = true; // enable/disable verbose
 
 let spells: TSArray<uint32> = [];
@@ -17,6 +19,8 @@ let posy: float = 0;
 let posz: float = 0;
 let map: uint32 = 0;
 let o: float = 0;
+
+let globalString: string = '';
 
 /* -----------------
  * Database Querying
@@ -69,8 +73,15 @@ function castHousingSpell(spell: TSSpell, templateid: uint32, creatureid: uint32
     o = spell.GetTargetDest().o;
     spawnedObject = spell.GetCaster().ToPlayer().SummonGameObject(templateid, posx, posy, posz, o, 0);
     spawnedCreature = spell.GetCaster().ToPlayer().SpawnCreature(creatureid, posx, posy, posz, o, 5, 0);
-    console.log(spawnedObject.GetEntry());
-    console.log(spawnedCreature.GetEntry());
+    /*console.log("stuff: " + spawnedObject.GetGUIDLow());
+    console.log("stuff: " + spawnedObject.GetGUID());*/
+    console.log("stuff: " + spawnedCreature.GetGUIDLow());
+    console.log("stuff: " + spawnedCreature.GetGUID());
+    console.log("stuff: " + spawnedCreature.GetDBTableGUIDLow());
+    let _spawnedObject = spawnedObject.GetMap().GetWorldObject(spawnedObject.GetGUID());
+    spawnedObject.RemoveFromWorld(true);
+    spawnedCreature.DespawnOrUnsummon(100);
+    console.log("b: " + _spawnedObject.GetGUID());
 }
 
 /**
@@ -132,6 +143,12 @@ function onGameObjectCreate(obj: TSGameObject, c: TSMutable<boolean>) {
         if (realobjects[x] === obj.GetEntry()) {
             c.set(false);
             if (DEBUG) console.log("real: " + obj.GetName());
+            if (DEBUG) console.log("instanceid (maybe): " + obj.ToGameObject().GetGUID());
+            if (DEBUG) console.log("instanceid (maybe): " + obj.ToGameObject().GetGUIDLow());
+            if (DEBUG) console.log("instanceid (maybe): " + obj.ToGameObject().GetDBTableGUIDLow());
+            if (DEBUG) console.log("instanceid (maybe): " + obj.GetGUID());
+            if (DEBUG) console.log("instanceid (maybe): " + obj.GetGUIDLow());
+            if (DEBUG) console.log("instanceid (maybe): " + obj.GetDBTableGUIDLow());
             // supposedly we're spawning objects in the spell event
         }
     }
@@ -182,8 +199,22 @@ function onCast(spell: TSSpell) {
     }
 }
 
+function onHousingCommand(player: TSPlayer, type: number, lang: number, msg: TSMutableString) {
+    if (msg.get().includes("!a")) {
+        console.log("testA");
+        player.SendBroadcastMessage("assert A!");
+        let query: string = 'SELECT * FROM gameobject WHERE guid=90446;';
+        console.log(query);
+        const _query: TSDatabaseResult = QueryWorld(query);
+        while (_query.GetRow()) {
+            console.log(_query.GetString(0));
+        }
+    }
+}
+
 export function HousingSpell(events: TSEventHandlers) {
     events.World.OnConfigLoad((reload)=>{LoadSpellTable(reload);});
     events.Spells.OnCast((spell)=>{onCast(spell);}); // forward any spell to onCast
-    events.GameObjects.OnCreate((obj,c)=>{onGameObjectCreate(obj, c)})
+    events.GameObjects.OnCreate((obj,c)=>{onGameObjectCreate(obj, c)});
+    events.Player.OnSay((player, msgType, lang, msg) => {onHousingCommand(player, msgType, lang, msg);});
 }
