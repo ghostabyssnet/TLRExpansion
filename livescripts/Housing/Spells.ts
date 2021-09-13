@@ -78,13 +78,13 @@ function castHousingSpell(spell: TSSpell, templateid: uint32, creatureid: uint32
         console.log("query 1: " + _query.GetUInt16(0));
     }
     // test2: lets see all guids from our template id
-    let t: string = "SELECT guid FROM gameobject;";
+    /*let t: string = "SELECT guid FROM gameobject;";
     let _query2: TSDatabaseResult = QueryWorld(t);
     console.log(t);
     console.log("cheddar: " + _query2.IsValid());
     while (_query2.GetRow()) {
         console.log("query 2: " + _query2.GetUInt64(0));
-    }
+    }*/
     spawnedCreature = spell.GetCaster().ToPlayer().SpawnCreature(creatureid, posx, posy, posz, o, 5, 0);
     /*console.log("stuff: " + spawnedObject.GetGUIDLow());
     console.log("stuff: " + spawnedObject.GetGUID());*/
