@@ -1,6 +1,6 @@
-import { HousingSpell } from "./Housing/Spells";
+import { HousingCore } from "./Housing/Core";
 
 export function Main(events: TSEventHandlers) {
-    HousingSpell(events);
+    HousingCore(events);
     // Register your events here!
 }
