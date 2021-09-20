@@ -55,22 +55,22 @@ const Q_world_createhousestable: string = 'CREATE TABLE IF NOT EXISTS ' + db_wor
 const Q_world_creategarrisonstable : string = 'CREATE TABLE IF NOT EXISTS ' + db_world_garrisonlist + '(hsid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,zoneid int(10) unsigned NOT NULL,phase tinyint NOT NULL default 1);';
 
 // create character <-> house relationship
-const Q_char_createhstable: string = 'CREATE TABLE IF NOT EXISTS ' + db_character_houses + '(guid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,hsid int(10) unsigned UNIQUE,FOREIGN KEY(guid) REFERENCES characters(guid));'; 
+const Q_char_createhstable: string = 'CREATE TABLE IF NOT EXISTS ' + db_character_houses + '(guid int(10) unsigned NOT NULL,hsid int(10) unsigned UNIQUE,FOREIGN KEY(guid) REFERENCES characters(guid));'; 
 
 // create placed gameobject table
-const Q_char_creategotable: string = 'CREATE TABLE IF NOT EXISTS ' + db_character_gameobjects + '(guid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,templateId int(10) NOT NULL,instanceId bigint unsigned NOT NULL,map smallint NOT NULL,locx double(5,5) NOT NULL,locy double(5,5) NOT NULL,locz double(5,5) NOT NULL,loco double(5,5) NOT NULL,FOREIGN KEY(guid) REFERENCES characters(guid));'; 
+const Q_char_creategotable: string = 'CREATE TABLE IF NOT EXISTS ' + db_character_gameobjects + '(guid int(10) unsigned NOT NULL,templateId int(10) NOT NULL,instanceId bigint unsigned NOT NULL,map smallint NOT NULL,locx double(20,10) NOT NULL,locy double(20,10) NOT NULL,locz double(20,10) NOT NULL,loco double(20,10) NOT NULL,FOREIGN KEY(guid) REFERENCES characters(guid));'; 
 
 // create dummy (the creatures we use to handle our gameobjects, rotating and stuff) table
-const Q_char_createdmtable: string = 'CREATE TABLE IF NOT EXISTS ' + db_character_dummies + '(guid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,templateId int(10) NOT NULL,instanceId bigint unsigned NOT NULL,map smallint NOT NULL,locx double(5,5) NOT NULL,locy double(5,5) NOT NULL,locz double(5,5) NOT NULL,loco double(5,5) NOT NULL,FOREIGN KEY(guid) REFERENCES characters(guid));'; 
+const Q_char_createdmtable: string = 'CREATE TABLE IF NOT EXISTS ' + db_character_dummies + '(guid int(10) unsigned NOT NULL,templateId int(10) NOT NULL,instanceId bigint unsigned NOT NULL,map smallint NOT NULL,locx double(20,10) NOT NULL,locy double(20,10) NOT NULL,locz double(20,10) NOT NULL,loco double(20,10) NOT NULL,FOREIGN KEY(guid) REFERENCES characters(guid));'; 
 
 // create guild <-> garrison relationship
-const Q_guild_createhstable: string = 'CREATE TABLE IF NOT EXISTS ' + db_guild_houses + '(guildid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,hsid int(10) unsigned UNIQUE,FOREIGN KEY(guildid) REFERENCES guild(guildid));';
+const Q_guild_createhstable: string = 'CREATE TABLE IF NOT EXISTS ' + db_guild_houses + '(guildid int(10) unsigned NOT NULL,hsid int(10) unsigned UNIQUE,FOREIGN KEY(guildid) REFERENCES guild(guildid));';
 
 // create garrison placed gameobject table
-const Q_guild_creategotable: string = 'CREATE TABLE IF NOT EXISTS ' + db_guild_gameobjects + '(guildid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,templateId int(10) NOT NULL,instanceId bigint unsigned NOT NULL,map smallint NOT NULL,locx double(5,5) NOT NULL,locy double(5,5) NOT NULL,locz double(5,5) NOT NULL,loco double(5,5) NOT NULL,FOREIGN KEY(guildid) REFERENCES guild(guildid));'; 
+const Q_guild_creategotable: string = 'CREATE TABLE IF NOT EXISTS ' + db_guild_gameobjects + '(guildid int(10) unsigned NOT NULL,templateId int(10) NOT NULL,instanceId bigint unsigned NOT NULL,map smallint NOT NULL,locx double(20,10) NOT NULL,locy double(20,10) NOT NULL,locz double(20,10) NOT NULL,loco double(20,10) NOT NULL,FOREIGN KEY(guildid) REFERENCES guild(guildid));'; 
 
 // create garrison dummy table
-const Q_guild_createdmtable: string = 'CREATE TABLE IF NOT EXISTS ' + db_guild_dummies + '(guildid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY,templateId int(10) NOT NULL,instanceId bigint unsigned NOT NULL,map smallint NOT NULL,locx double(5,5) NOT NULL,locy double(5,5) NOT NULL,locz double(5,5) NOT NULL,loco double(5,5) NOT NULL,FOREIGN KEY(guildid) REFERENCES guild(guildid));'; 
+const Q_guild_createdmtable: string = 'CREATE TABLE IF NOT EXISTS ' + db_guild_dummies + '(guildid int(10) unsigned NOT NULL,templateId int(10) NOT NULL,instanceId bigint unsigned NOT NULL,map smallint NOT NULL,locx double(20,10) NOT NULL,locy double(20,10) NOT NULL,locz double(20,10) NOT NULL,loco double(20,10) NOT NULL,FOREIGN KEY(guildid) REFERENCES guild(guildid));'; 
 
 // create gameobject template list table
 const Q_go_creategotable: string = 'CREATE TABLE IF NOT EXISTS ' + db_gameobject_template + '(internalid int(10) unsigned NOT NULL UNIQUE PRIMARY KEY AUTO_INCREMENT,entry int(10) unsigned NOT NULL UNIQUE,id varchar(255) UNIQUE NOT NULL,displayid int(10) unsigned NOT NULL UNIQUE,icon varchar(255) NOT NULL,name varchar(255) NOT NULL,rarity tinyint NOT NULL,type tinyint NOT NULL default 5);';

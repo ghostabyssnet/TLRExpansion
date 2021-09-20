@@ -76,8 +76,9 @@ class HousingDatabase extends TSClass {
             let pos_y = q.GetFloat(5);
             let pos_z = q.GetFloat(6);
             let pos_o = q.GetFloat(7);
-            let object = new CharHousingObject(player_guid, guid, templateid, pos_x, pos_y, pos_z, pos_o, pos_map);
-            object.Spawn(map, true);
+            console.log("TODO: this");
+            //let object = new CharHousingObject(player_guid, guid, templateid, pos_x, pos_y, pos_z, pos_o, pos_map);
+            //object.Spawn(map, true);
         }
     }
 // TODO: test this
@@ -144,7 +145,7 @@ class HousingDatabase extends TSClass {
     /**
      * 
      * @param entry spellid
-     * @returns 
+     * @returns spawntemplateid
      */
     static GetSpawnTemplateId(entry: uint32) : uint32 {
         let _spawnTemplateId : uint32 = -1;
@@ -160,7 +161,7 @@ class HousingDatabase extends TSClass {
     /**
      * 
      * @param entry spawntemplateid
-     * @returns 
+     * @returns spawncreatureid
      */
     static GetSpawnCreatureId(entry: uint32) : uint32 {
         let _spawnCreatureId : uint32 = -1;
@@ -199,13 +200,22 @@ class HousingObject extends TSClass {
     }
 }
 
+/**
+ * FIXME: fix ctor after ihm fixes its bug
+ */
 class CharHousingObject extends HousingObject {
-    player_guid: uint32;
-    constructor(player_guid: uint32, guid: uint64, templateid: uint32, pos_x: float, pos_y: float, pos_z: float, pos_o: float, pos_map: uint32) {
+    player_guid: uint32 = 0;
+    constructor(guid: uint64, templateid: uint32, pos_x: float, pos_y: float, pos_z: float, pos_o: float, pos_map: uint32) {
         super(guid, templateid, pos_x, pos_y, pos_z, pos_o, pos_map);
+    }
+    /**
+     * FIXME: we delete this and make it a constructor argument after tswow's ctor bug is fixed
+     * @param player_guid uint32 player guid
+     */
+    PlayerGuidCtor(player_guid: uint32) {
         this.player_guid = player_guid;
     }
-    GetDummyTemplate() : uint32 {
+    GetDummyTemplateFromDatabase() : uint32 {
         let result: uint32 = 0;
         let query:string = 'SELECT templateId from ' + db_character_dummies + ' WHERE instanceId = ' + this.guid + ';';
         if (DEBUG) console.log(query);
@@ -214,18 +224,37 @@ class CharHousingObject extends HousingObject {
         return result;
     }
 
+    /**
+     * gets a dummy thisentry from database
+     * @param base_object_id templateID for the GameObjectTemplate (i.e. its entry)
+     * @param what 
+     * @returns 
+     */
+    static GetDummyEntry(base_object_id: uint32) : uint32 {
+        let result: uint32 = 0;
+        let query:string = "SELECT thisentry FROM " + db_gameobject_creature + " WHERE entry = " + base_object_id + ";";
+        let q:TSDatabaseResult = QueryCharacters(query);
+        while (q.GetRow()) result = q.GetUInt32(0);
+        return result;
+    }
+
+    /**
+     * 
+     * @param creature_id creature GUID
+     */
     RegisterDummy(creature_id: uint64) {
-        let query:string = 'INSERT INTO ' + db_character_dummies + '(guid, templateId, instanceId, map, locx, locy, locz, loco) VALUES ' + this.player_guid + ',' + this.templateid + ',' + creature_id + ',' + this.pos_map + ',' + this.pos_x + ',' + this.pos_y + ',' + this.pos_z + ',' + this.pos_o + ';';
+        let tmpl: uint32 = CharHousingObject.GetDummyEntry(this.templateid);
+        let query:string = 'INSERT INTO ' + db_character_dummies + '(guid, templateId, instanceId, map, locx, locy, locz, loco) VALUES (' + this.player_guid + ',' + tmpl + ',' + creature_id + ',' + this.pos_map + ',' + this.pos_x + ',' + this.pos_y + ',' + this.pos_z + ',' + this.pos_o + ');';
         if (DEBUG) console.log(query);
         QueryCharacters(query);
     }
 
     /**
      * TODO!!!
-     */
+     */ 
     SpawnDummy(map: TSMap, obj: TSGameObject) {
         // TODO: this
-        let cr: TSCreature = obj.SpawnCreature(this.GetDummyTemplate(), this.pos_x, this.pos_y, this.pos_z, this.pos_o, 8, 0);
+        let cr: TSCreature = obj.SpawnCreature(this.GetDummyTemplateFromDatabase(), this.pos_x, this.pos_y, this.pos_z, this.pos_o, 8, 0);
         this.RegisterDummy(cr.GetGUID());
     }
 // TODO: test this    
@@ -246,7 +275,7 @@ class CharHousingObject extends HousingObject {
 
     /**
      * registers a obj, make sure it was already spawned
-     */
+     */ 
     Register() {
         // TODO: delete/modify those when we add proper phase masking
         // idk if spawn mask should be removed though (15 means spawn for any dungeon in any difficulty)
@@ -331,10 +360,11 @@ export function CreateCharHousingObject(spell: TSSpell, templateid: uint32, crea
     posz = spell.GetTargetDest().z;
     o = spell.GetTargetDest().o;
     let _obj: TSWorldObject = spell.GetCaster().ToPlayer().SummonGameObject(templateid, posx, posy, posz, o, 0);
-    let obj = new CharHousingObject(spell.GetCaster().ToPlayer().GetGUID(), _obj.GetGUID(), templateid, posx, posy, posz, o, map);
+    let obj = new CharHousingObject(_obj.GetGUID(), templateid, posx, posy, posz, o, map);
+    obj.PlayerGuidCtor(spell.GetCaster().ToPlayer().GetGUID()); // TODO: change this after ctor bugfix
     let cr: TSCreature = spell.GetCaster().ToPlayer().SpawnCreature(creatureid, posx, posy, posz, o, 8, 0);
     obj.Register();
-    obj.RegisterDummy(creatureid);
+    obj.RegisterDummy(cr.GetGUID());
 }
 
 /**
@@ -496,7 +526,7 @@ function onCast(spell: TSSpell) {
 function onHousingCommand(player: TSPlayer, type: number, lang: number, msg: TSMutableString) {
     if (msg.get().includes("!a")) {
         console.log("testA");
-        player.SendBroadcastMessage("assert A!");
+        player.SendBroadcastMessage("aA!");
         let query: string = 'SELECT guid FROM gameobject WHERE guid=90446;';
         console.log(query);
         const _query: TSDatabaseResult = QueryWorld(query);
@@ -530,18 +560,10 @@ function DatabaseTests(player: TSPlayer) {
     console.log(x);
 }
 
-function assert() {
-    //console.log("assert: " + HousingDummy.IsRegistered(1));
-}
-
 // TODO: delete this
 function onDatabaseCommand(player: TSPlayer, type: number, lang: number, msg: TSMutableString) {
     if (msg.get().includes("dbtest")) {
         DatabaseTests(player);
-        return;
-    }
-    if (msg.get().includes("assert")) {
-        assert();
         return;
     }
 }
@@ -552,6 +574,6 @@ export function HousingCore(events: TSEventHandlers) {
     events.GameObjects.OnCreate((obj,c)=>{onGameObjectCreate(obj, c)});
     events.Player.OnSay((player, msgType, lang, msg) => {onHousingCommand(player, msgType, lang, msg);});
     events.World.OnConfigLoad((reload)=>{LoadHousingObjects(reload);});
-    events.Maps.OnGameObjectCreate((map,obj,c)=>{ConfirmHousingSystem(map)});
+    //events.Maps.OnGameObjectCreate((map,obj,c)=>{ConfirmHousingSystem(map)});
     events.Player.OnSay((player, msgType, lang, msg) => {onDatabaseCommand(player, msgType, lang, msg);});
 }
