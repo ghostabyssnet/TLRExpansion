@@ -64,19 +64,20 @@ class HousingDatabase extends TSClass {
      * @param guid instanceId
      */
     SpawnCharacterObject(map: TSMap, guid: uint64) : void {
-        let query:string = "SELECT templateId, instanceId, map, locx, locy, locz, loco FROM " + db_character_gameobjects + " WHERE instanceId = " + guid + ";";
+        let query:string = "SELECT guid, templateId, instanceId, map, locx, locy, locz, loco FROM " + db_character_gameobjects + " WHERE instanceId = " + guid + ";";
         if (DEBUG) console.log(query);
         let q: TSDatabaseResult = QueryCharacters(query);
         while (q.GetRow()) {
-            let templateid = q.GetUInt32(0);
-            let guid = q.GetUInt64(1);
-            let pos_map = q.GetUInt32(2);
-            let pos_x = q.GetFloat(3);
-            let pos_y = q.GetFloat(4);
-            let pos_z = q.GetFloat(5);
-            let pos_o = q.GetFloat(6);
-            let object = new HousingObject(guid, templateid, pos_x, pos_y, pos_z, pos_o, pos_map);
-            object.Spawn(map);
+            let player_guid = q.GetUInt32(0);
+            let templateid = q.GetUInt32(1);
+            let guid = q.GetUInt64(2);
+            let pos_map = q.GetUInt32(3);
+            let pos_x = q.GetFloat(4);
+            let pos_y = q.GetFloat(5);
+            let pos_z = q.GetFloat(6);
+            let pos_o = q.GetFloat(7);
+            let object = new CharHousingObject(player_guid, guid, templateid, pos_x, pos_y, pos_z, pos_o, pos_map);
+            object.Spawn(map, true);
         }
     }
 // TODO: test this
@@ -84,22 +85,23 @@ class HousingDatabase extends TSClass {
      * 
      * @param guid instanceId
      */
-    SpawnGuildObject(map: TSMap, guid: uint64) : void {
-        let query:string = "SELECT templateId, instanceId, map, locx, locy, locz, loco FROM " + db_guild_gameobjects + " WHERE instanceId = " + guid + ";";
+    /* TODO: this SpawnGuildObject(map: TSMap, guid: uint64) : void {
+        let query:string = "SELECT guid, templateId, instanceId, map, locx, locy, locz, loco FROM " + db_character_gameobjects + " WHERE instanceId = " + guid + ";";
         if (DEBUG) console.log(query);
         let q: TSDatabaseResult = QueryCharacters(query);
         while (q.GetRow()) {
-            let templateid = q.GetUInt32(0);
-            let guid = q.GetUInt64(1);
-            let pos_map = q.GetUInt32(2);
-            let pos_x = q.GetFloat(3);
-            let pos_y = q.GetFloat(4);
-            let pos_z = q.GetFloat(5);
-            let pos_o = q.GetFloat(6);
-            let object = new HousingObject(guid, templateid, pos_x, pos_y, pos_z, pos_o, pos_map);
-            object.Spawn(map);
+            let player_guid = q.GetUInt32(0);
+            let templateid = q.GetUInt32(1);
+            let guid = q.GetUInt64(2);
+            let pos_map = q.GetUInt32(3);
+            let pos_x = q.GetFloat(4);
+            let pos_y = q.GetFloat(5);
+            let pos_z = q.GetFloat(6);
+            let pos_o = q.GetFloat(7);
+            let object = new CharHousingObject(guid, templateid, pos_x, pos_y, pos_z, pos_o, pos_map);
+            object.Spawn(map, true);
         }
-    }
+    }*/
 // TODO: test this
     Confirm(map: TSMap) : void {
         this.SetLength(); // calling this just to be sure it's updated
@@ -122,7 +124,7 @@ class HousingDatabase extends TSClass {
             let mapId: uint16 = _q.GetUInt16(1);
             if (map.GetMapId() != mapId) continue;
             if (!HousingObject.IsSpawned(map, instanceId)) {
-                this.SpawnGuildObject(map, instanceId);
+                // TODO: this.SpawnGuildObject(map, instanceId);
             }
         }
     }
@@ -171,7 +173,7 @@ class HousingDatabase extends TSClass {
         return _spawnCreatureId;
     }
 }
-// TODO: test this
+// maybe convert this to interface?
 class HousingObject extends TSClass {
     guid: uint64;
     templateid: uint32;
@@ -195,58 +197,89 @@ class HousingObject extends TSClass {
         if (!map.GetWorldObject(guid).GetGUID()) return false;
         return true;
     }
-// TODO: test this
-    Register(ownerGuid: uint32) {
-        // TODO: delete/modify those when we add proper phase masking
-        // idk if spawn mask should be removed though (15 means spawn for any dungeon in any difficulty)
-        let spawnMask: uint8 = 15;
-        let phaseMask: uint16 = BASE_PHASEMASK;
-        if (DEBUG) console.log("HousingObject::Register()");
-        let query: string = 'INSERT INTO ' + db_character_gameobjects + '(guid, templateId, instanceId, map, locx, locy, locz, loco) VALUES (' + ownerGuid + ',' + this.templateid + ',' + this.guid + ',' + this.pos_map + ',' + this.pos_x + ',' + this.pos_y + ',' + this.pos_z + ',' + this.pos_o + ');';
+}
+
+class CharHousingObject extends HousingObject {
+    player_guid: uint32;
+    constructor(player_guid: uint32, guid: uint64, templateid: uint32, pos_x: float, pos_y: float, pos_z: float, pos_o: float, pos_map: uint32) {
+        super(guid, templateid, pos_x, pos_y, pos_z, pos_o, pos_map);
+        this.player_guid = player_guid;
+    }
+    GetDummyTemplate() : uint32 {
+        let result: uint32 = 0;
+        let query:string = 'SELECT templateId from ' + db_character_dummies + ' WHERE instanceId = ' + this.guid + ';';
+        if (DEBUG) console.log(query);
+        let q: TSDatabaseResult = QueryCharacters(query);
+        while (q.GetRow()) result = q.GetUInt32(0);
+        return result;
+    }
+
+    RegisterDummy(creature_id: uint64) {
+        let query:string = 'INSERT INTO ' + db_character_dummies + '(guid, templateId, instanceId, map, locx, locy, locz, loco) VALUES ' + this.player_guid + ',' + this.templateid + ',' + creature_id + ',' + this.pos_map + ',' + this.pos_x + ',' + this.pos_y + ',' + this.pos_z + ',' + this.pos_o + ';';
         if (DEBUG) console.log(query);
         QueryCharacters(query);
     }
+
+    /**
+     * TODO!!!
+     */
+    SpawnDummy(map: TSMap, obj: TSGameObject) {
+        // TODO: this
+        let cr: TSCreature = obj.SpawnCreature(this.GetDummyTemplate(), this.pos_x, this.pos_y, this.pos_z, this.pos_o, 8, 0);
+        this.RegisterDummy(cr.GetGUID());
+    }
 // TODO: test this    
-    Spawn(map: TSMap) {
-        if (DEBUG) console.log("HousingObject::Spawn()");
+    Spawn(map: TSMap, with_dummy: boolean) {
+        if (DEBUG) console.log("CharHousingObject::Spawn()");
         if (map.GetMapId() != this.pos_map) {
-            if (DEBUG) console.log("Error spawning HousingObject " + this.guid + ": Map ID does not match database.");
+            if (DEBUG) console.log("Error spawning CharHousingObject " + this.guid + ": Map ID does not match database.");
             return;
         }
         if (HousingObject.IsSpawned(map, this.guid)) return;
         // FIXME: #17 make this thing below not suck
-        map.GetWorldObject(300000).SummonGameObject(this.guid, this.pos_x, this.pos_y, this.pos_z, this.pos_o, 0);
+        let obj = map.GetWorldObject(300000).SummonGameObject(this.templateid, this.pos_x, this.pos_y, this.pos_z, this.pos_o, 0);
+        // TODO: this
+        if (with_dummy) {
+
+        }
     }
+
+    /**
+     * registers a obj, make sure it was already spawned
+     */
+    Register() {
+        // TODO: delete/modify those when we add proper phase masking
+        // idk if spawn mask should be removed though (15 means spawn for any dungeon in any difficulty)
+        let spawnMask: uint8 = 15;
+        let phaseMask: uint16 = BASE_PHASEMASK;
+        if (DEBUG) console.log("CharHousingObject::Register()");
+        let query: string = 'INSERT INTO ' + db_character_gameobjects + '(guid, templateId, instanceId, map, locx, locy, locz, loco) VALUES (' + this.player_guid + ',' + this.templateid + ',' + this.guid + ',' + this.pos_map + ',' + this.pos_x + ',' + this.pos_y + ',' + this.pos_z + ',' + this.pos_o + ');';
+        if (DEBUG) console.log(query);
+        QueryCharacters(query);
+    }
+
 // TODO: test this
-    Despawn() {
-        // TODO: ...
+    Despawn(map: TSMap, with_dummy: boolean) {
+        if (DEBUG) console.log("CharHousingObject::Despawn()");
+        if (map.GetMapId() != this.pos_map) {
+            if (DEBUG) console.log("Error despawning HousingObject " + this.guid + ": Map ID does not match database.");
+            return;
+        }
+        if (!HousingObject.IsSpawned(map, this.guid)) return;
+        map.GetWorldObject(this.guid).ToGameObject().RemoveFromWorld(true);
+        // TODO: this boi
+        if (with_dummy) console.log("TODO: despawn dummy in here as well");
     }
 // TODO: test this
     Unregister() {
-        // TODO: ...
+        if (DEBUG) console.log("CharHousingObject::Unregister()");
+        let query: string = 'DELETE FROM ' + db_character_gameobjects + ' WHERE instanceId=' + this.guid + ';';
+        if (DEBUG) console.log(query);
+        QueryCharacters(query);
     }
 }
 
-// TODO: copy-paste housingobject into this
-class HousingDummy extends TSClass {
-    pos_x: float;
-    pos_y: float;
-    pos_z: float;
-    pos_o: float;
-    pos_map: uint32;
-    constructor(pos_x: float, pos_y: float, pos_z: float, pos_o: float, pos_map: uint32) {
-        super();
-        this.pos_x = pos_x;
-        this.pos_y = pos_y;
-        this.pos_z = pos_z;
-        this.pos_o = pos_o;
-        this.pos_map = pos_map;
-    }
-
-    IsSpawned() {
-        // TODO...
-    }
-}
+// TODO: do GUILDHOUSINGOBJECT here (copypaste)
 
 /* -----------------
  * Database Querying
@@ -285,14 +318,36 @@ const Q_go_guild_instance_create: string = 'INSERT INTO ' + db_character_gameobj
 */
 
 /**
+ * summons a housing object
+ * @param spell spell used to summon the object
+ * @param templateid gameobject template id (entry)
+ * @param creatureid dummy creature id (entry)
+ */
+export function CreateCharHousingObject(spell: TSSpell, templateid: uint32, creatureid: uint32) {
+    if (DEBUG) console.log("CreateCharHousingObject()");
+    map = spell.GetTargetDest().map;
+    posx = spell.GetTargetDest().x;
+    posy = spell.GetTargetDest().y;
+    posz = spell.GetTargetDest().z;
+    o = spell.GetTargetDest().o;
+    let _obj: TSWorldObject = spell.GetCaster().ToPlayer().SummonGameObject(templateid, posx, posy, posz, o, 0);
+    let obj = new CharHousingObject(spell.GetCaster().ToPlayer().GetGUID(), _obj.GetGUID(), templateid, posx, posy, posz, o, map);
+    let cr: TSCreature = spell.GetCaster().ToPlayer().SpawnCreature(creatureid, posx, posy, posz, o, 8, 0);
+    obj.Register();
+    obj.RegisterDummy(creatureid);
+}
+
+/**
  * 
  * @param spell passthrough
  * @param templateid gameobject template entry
  * @param creatureid dummy creature template entry
  */
 function castHousingSpell(spell: TSSpell, templateid: uint32, creatureid: uint32) {
+    // TODO: show this only if the player is a GM
     spell.GetCaster().ToPlayer().SendBroadcastMessage("[DEBUG] Housing Spell");
-    
+    // TODO: charHousingObject tests here
+    CreateCharHousingObject(spell, templateid, creatureid);
 }
 
 // backup if something goes wrong
@@ -384,6 +439,7 @@ function onGameObjectCreate(obj: TSGameObject, c: TSMutable<boolean>) {
     if (mirrorobjects.length <= 1) LoadSpellTable(false);
     // check if it's a mirror first
     // if we spawned a mirror, we despawn it and spawn the original object
+    // TODO: convert those to separate functions that return boolean
     for (let x = 0; x < mirrorobjects.length; x++) {
         if (mirrorobjects[x] === obj.GetEntry()) {
             c.set(true);
@@ -474,10 +530,18 @@ function DatabaseTests(player: TSPlayer) {
     console.log(x);
 }
 
+function assert() {
+    //console.log("assert: " + HousingDummy.IsRegistered(1));
+}
+
 // TODO: delete this
 function onDatabaseCommand(player: TSPlayer, type: number, lang: number, msg: TSMutableString) {
-    if (msg.get().includes("hstest")) {
+    if (msg.get().includes("dbtest")) {
         DatabaseTests(player);
+        return;
+    }
+    if (msg.get().includes("assert")) {
+        assert();
         return;
     }
 }
