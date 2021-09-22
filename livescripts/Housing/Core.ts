@@ -201,6 +201,7 @@ class HousingObject extends TSClass {
 }
 
 /**
+ * USE CREATE() AND DELETE() if you don't know what you're doing
  * FIXME: fix ctor after ihm fixes its bug
  */
 class CharHousingObject extends HousingObject {
@@ -215,6 +216,7 @@ class CharHousingObject extends HousingObject {
     PlayerGuidCtor(player_guid: uint32) {
         this.player_guid = player_guid;
     }
+
     GetDummyTemplateFromDatabase() : uint32 {
         let result: uint32 = 0;
         let query:string = 'SELECT templateId from ' + db_character_dummies + ' WHERE instanceId = ' + this.guid + ';';
@@ -243,20 +245,36 @@ class CharHousingObject extends HousingObject {
      * @param creature_id creature GUID
      */
     RegisterDummy(creature_id: uint64) {
+        if (DEBUG) console.log("CharHousingObject::RegisterDummy()");
         let tmpl: uint32 = CharHousingObject.GetDummyEntry(this.templateid);
-        let query:string = 'INSERT INTO ' + db_character_dummies + '(guid, templateId, instanceId, map, locx, locy, locz, loco) VALUES (' + this.player_guid + ',' + tmpl + ',' + creature_id + ',' + this.pos_map + ',' + this.pos_x + ',' + this.pos_y + ',' + this.pos_z + ',' + this.pos_o + ');';
+        let query:string = 'INSERT INTO ' + db_character_dummies + '(guid, templateId, origId, instanceId, map, locx, locy, locz, loco) VALUES (' + this.player_guid + ',' + tmpl + ',' +  this.guid + ',' + creature_id + ',' + this.pos_map + ',' + this.pos_x + ',' + this.pos_y + ',' + this.pos_z + ',' + this.pos_o + ');';
         if (DEBUG) console.log(query);
         QueryCharacters(query);
     }
 
     /**
-     * TODO!!!
-     */ 
-    SpawnDummy(map: TSMap, obj: TSGameObject) {
-        // TODO: this
-        let cr: TSCreature = obj.SpawnCreature(this.GetDummyTemplateFromDatabase(), this.pos_x, this.pos_y, this.pos_z, this.pos_o, 8, 0);
-        this.RegisterDummy(cr.GetGUID());
+     * 
+     * @param creature_id creature GUID
+     */
+    UnregisterDummy(creature_id: uint64) {
+        if (DEBUG) console.log("CharHousingObject::UnregisterDummy()");
+        let query: string = 'DELETE FROM ' + db_character_dummies + ' WHERE instanceId=' + creature_id + ';';
+        if (DEBUG) console.log(query);
+        QueryCharacters(query);
     }
+
+    /**
+     * TODO: test properly
+     */ 
+    SpawnDummy(map: TSMap, obj: TSGameObject) : uint64 {
+        let cr: TSCreature = obj.SpawnCreature(this.GetDummyTemplateFromDatabase(), this.pos_x, this.pos_y, this.pos_z, this.pos_o, 8, 0);
+        return cr.GetGUID();
+    }
+
+    DespawnDummy(map: TSMap, guid: uint64) {
+        map.GetWorldObject(300000).GetCreature(guid).DespawnOrUnsummon(100);
+    }
+
 // TODO: test this    
     Spawn(map: TSMap, with_dummy: boolean) {
         if (DEBUG) console.log("CharHousingObject::Spawn()");
@@ -269,10 +287,18 @@ class CharHousingObject extends HousingObject {
         let obj = map.GetWorldObject(300000).SummonGameObject(this.templateid, this.pos_x, this.pos_y, this.pos_z, this.pos_o, 0);
         // TODO: this
         if (with_dummy) {
-
+            let creatureId: uint64 = this.SpawnDummy(map, obj);
+            this.RegisterDummy(creatureId);
         }
     }
-
+    GetDummy() : uint64{
+        if (DEBUG) console.log("CharHousingObject::GetDummy()");
+        let result: uint64 = 0;
+        let query:string = 'SELECT origId FROM ' + db_character_dummies + ' WHERE instanceId = ' + this.guid + ';';
+        let q:TSDatabaseResult = QueryCharacters(query);
+        while (q.GetRow()) result = q.GetUInt64(0);
+        return result;
+    }
     /**
      * registers a obj, make sure it was already spawned
      */ 
@@ -297,14 +323,40 @@ class CharHousingObject extends HousingObject {
         if (!HousingObject.IsSpawned(map, this.guid)) return;
         map.GetWorldObject(this.guid).ToGameObject().RemoveFromWorld(true);
         // TODO: this boi
-        if (with_dummy) console.log("TODO: despawn dummy in here as well");
+        if (with_dummy) {
+            this.DespawnDummy(map, this.GetDummy());
+        }
     }
 // TODO: test this
-    Unregister() {
+    Unregister(with_dummy: boolean) {
         if (DEBUG) console.log("CharHousingObject::Unregister()");
         let query: string = 'DELETE FROM ' + db_character_gameobjects + ' WHERE instanceId=' + this.guid + ';';
         if (DEBUG) console.log(query);
         QueryCharacters(query);
+        if (with_dummy) {
+            this.UnregisterDummy(this.GetDummy());
+        }
+    }
+
+    /**
+     * Properly creates a new housingobject
+     * spawns then registers it
+     * @param map 
+     */
+    Create(map: TSMap) {
+        if (DEBUG) console.log("CharHousingObject::Create()");
+        this.Spawn(map, true);
+        this.Register();
+    }
+    /**
+     * properly deletes an housingobject
+     * despawns then unregisters an object (effectively deleting it)
+     * @param map 
+     */
+    Delete(map: TSMap) {
+        if (DEBUG) console.log("CharHousingObject::Delete()");
+        this.Despawn(map, true);
+        this.Unregister(true);
     }
 }
 
@@ -330,14 +382,6 @@ const db_guild_dummies: string = 'gm_guild_dm';
 
 const Q_list_spells: string = 'SELECT entry, spellid FROM ' + db_gameobject_spellitem + ';';
 const Q_list_mirrors: string = 'SELECT entry, thisentry FROM ' + db_gameobject_mirror + ';';
-
-// TODO:
-const Q_go_char_instance_create: string = 'INSERT INTO ' + db_character_gameobjects + '() VALUES ' + '...' + ';';
-const Q_go_char_instance_remove: string = 'REMOVE FROM? ' + db_character_gameobjects + '() VALUES ' + '...' + ';';
-
-// TODO:
-const Q_go_guild_instance_create: string = 'INSERT INTO ' + db_character_gameobjects + '() VALUES ' + '...' + ';';
-
 // TODO: check if object is spawned at the player's owned territory
 
 
@@ -367,6 +411,33 @@ export function CreateCharHousingObject(spell: TSSpell, templateid: uint32, crea
     obj.RegisterDummy(cr.GetGUID());
 }
 
+// todo: make this bullshit static so it works for some reason
+export function DeleteCharHousingObject(map: TSMap, instanceId: uint64) {
+    if (DEBUG) console.log("DeleteCharHousingObject()");
+    let templateid: uint32;
+    let guid: uint64;
+    let pos_map: uint32;
+    let pos_x: float;
+    let pos_y: float;
+    let pos_z: float;
+    let pos_o: float;
+    let query:string = 'SELECT * FROM ' + db_character_gameobjects + ' WHERE instanceId = ' + instanceId + ';';
+    if (DEBUG) console.log(query);
+    let q: TSDatabaseResult = QueryCharacters(query);
+    while (q.GetRow()) {
+        templateid = q.GetUInt32(1);
+        guid= q.GetUInt64(2);
+        pos_map = q.GetUInt32(3);
+        pos_x = q.GetFloat(4);
+        pos_y = q.GetFloat(5);
+        pos_z = q.GetFloat(6);
+        pos_o = q.GetFloat(7);
+        let obj: CharHousingObject;
+        obj = new CharHousingObject(guid, templateid, pos_x, pos_y, pos_z, pos_o, pos_map);
+        obj.Delete(map);
+    }
+}
+
 /**
  * 
  * @param spell passthrough
@@ -378,49 +449,7 @@ function castHousingSpell(spell: TSSpell, templateid: uint32, creatureid: uint32
     spell.GetCaster().ToPlayer().SendBroadcastMessage("[DEBUG] Housing Spell");
     // TODO: charHousingObject tests here
     CreateCharHousingObject(spell, templateid, creatureid);
-}
-
-// backup if something goes wrong
-function backupHousingSpell(spell: TSSpell, templateid: uint32, creatureid: uint32) {
-    spell.GetCaster().ToPlayer().SendBroadcastMessage("[DEBUG] Housing Spell");
-    if (DEBUG) console.log("x: " + spell.GetTargetDest().x + ", y: " + spell.GetTargetDest().y + ", z: " + spell.GetTargetDest().z + ", o: " +spell.GetTargetDest().o);
-    if (DEBUG) console.log("area id: " + spell.GetCaster().ToPlayer().GetAreaId());
-    if (DEBUG) console.log("map: " + spell.GetCaster().ToPlayer().GetMapId());
-    if (DEBUG) console.log("test: " + spells.length);
-    if (DEBUG) console.log("TemplateId: " + templateid);
-    if (DEBUG) console.log("CreatureId: " + creatureid);
-    map = spell.GetTargetDest().map;
-    posx = spell.GetTargetDest().x;
-    posy = spell.GetTargetDest().y;
-    posz = spell.GetTargetDest().z;
-    o = spell.GetTargetDest().o;
-    spawnedObject = spell.GetCaster().ToPlayer().SummonGameObject(templateid, posx, posy, posz, o, 0);
-    let test: TSWorldObject = spell.GetCaster().ToPlayer().GetMap().GetWorldObject(spawnedObject.GetGUID());
-    console.log("lets see guid: " + test.GetName() + "::" + test.GetGUID());
-    console.log("st: " + spell.GetCaster().GetMap().GetWorldObject(spawnedObject.GetGUID()).GetGUID());
-    let _query: TSDatabaseResult = QueryWorld('SELECT id FROM gameobject WHERE guid = ' + spawnedObject.GetGUID());
-    while (_query.GetRow()) {
-        console.log("query 1: " + _query.GetUInt16(0));
-    }
-    // test2: lets see all guids from our template id
-    /*let t: string = "SELECT guid FROM gameobject;";
-    let _query2: TSDatabaseResult = QueryWorld(t);
-    console.log(t);
-    console.log("cheddar: " + _query2.IsValid());
-    while (_query2.GetRow()) {
-        console.log("query 2: " + _query2.GetUInt64(0));
-    }*/
-    spawnedCreature = spell.GetCaster().ToPlayer().SpawnCreature(creatureid, posx, posy, posz, o, 5, 0);
-    /*console.log("stuff: " + spawnedObject.GetGUIDLow());
-    console.log("stuff: " + spawnedObject.GetGUID());*/
-    console.log("stuff: " + spawnedCreature.GetGUIDLow());
-    console.log("stuff: " + spawnedCreature.GetGUID());
-    console.log("stuff: " + spawnedCreature.GetDBTableGUIDLow());
-    let _spawnedObject = spawnedObject.GetMap().GetWorldObject(spawnedObject.GetGUID());
-    // spawnedObject.IsSpawned();
-    //spawnedObject.RemoveFromWorld(true);
-    spawnedCreature.DespawnOrUnsummon(100);
-    console.log("b: " + _spawnedObject.GetGUID());
+    
 }
 
 /**
@@ -562,9 +591,20 @@ function DatabaseTests(player: TSPlayer) {
 
 // TODO: delete this
 function onDatabaseCommand(player: TSPlayer, type: number, lang: number, msg: TSMutableString) {
+    if (!player.IsGM()) return;
     if (msg.get().includes("dbtest")) {
         DatabaseTests(player);
         return;
+    }
+    else if (msg.get().includes("hs.delete")) {
+        let x: uint64 = ToUInt64('17370387958095413879');
+        DeleteCharHousingObject(player.GetMap(), x);
+        return;
+    }
+    else if (msg.get().includes("uint.test")) {
+        let x: uint64 = ToUInt64('17370387958095413879');
+        x = ToInt64('17370387958095413879')
+        console.log(x);
     }
 }
 
